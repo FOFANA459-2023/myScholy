@@ -1,5 +1,8 @@
-// ...existing code...
-const API_BASE_URL = 'http://localhost:8000/api';
+// Prefer Vite env variable in production; fallback to deployed backend URL
+// Note: Use import.meta.env and prefix vars with VITE_
+const API_BASE_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  'https://myscholyscholarship-backend.onrender.com/api';
 
 class ApiService {
   constructor() {
@@ -94,8 +97,10 @@ class ApiService {
           config.headers['Authorization'] = `Bearer ${accessToken}`;
           response = await fetch(url, config);
         } catch (refreshError) {
-          // Refresh failed, redirect to login
-          window.location.href = '/login';
+          // Refresh failed, redirect to login unless already on login to avoid loops
+          if (typeof window !== 'undefined' && window.location && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
           throw new Error('Authentication failed');
         }
       }
