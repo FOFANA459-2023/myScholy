@@ -1,1 +1,9 @@
-/* /index.html 200
+# Cloudflare Pages configuration for SPA routing
+# This file tells Cloudflare Pages to serve index.html for all routes
+# so that React Router can handle client-side routing
+
+# Redirect all requests to index.html with 200 status
+/*    /index.html   200
+
+# Optional: Handle specific file extensions
+/api/*    https://myscholyscholarship-backend.onrender.com/api/:splat    200

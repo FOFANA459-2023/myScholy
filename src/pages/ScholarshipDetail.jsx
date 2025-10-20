@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
+import NotFound from './NotFound';
 
 const ScholarshipDetail = React.memo(() => {
   const { id } = useParams();
@@ -42,6 +43,10 @@ const ScholarshipDetail = React.memo(() => {
 
       if (error) {
         console.error('API Error:', error);
+        // Check if it's a 404 error
+        if (error.includes('404') || error.includes('Not Found') || error.includes('not found')) {
+          throw new Error('SCHOLARSHIP_NOT_FOUND');
+        }
         throw new Error(error);
       }
       
@@ -49,7 +54,11 @@ const ScholarshipDetail = React.memo(() => {
       setScholarship(data);
     } catch (error) {
       console.error('Error fetching scholarship:', error);
-      setError('There was an issue fetching the scholarship details.');
+      if (error.message === 'SCHOLARSHIP_NOT_FOUND') {
+        setError('SCHOLARSHIP_NOT_FOUND');
+      } else {
+        setError('There was an issue fetching the scholarship details.');
+      }
       setHasFetched(false); // Allow retry
     } finally {
       setLoading(false);
@@ -108,6 +117,10 @@ const ScholarshipDetail = React.memo(() => {
         </div>
       </div>
     );
+  }
+
+  if (error === 'SCHOLARSHIP_NOT_FOUND') {
+    return <NotFound />;
   }
 
   if (error) {
