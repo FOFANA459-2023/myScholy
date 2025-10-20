@@ -17,6 +17,7 @@ import AccessDenied from "./pages/AccessDenied.jsx";
 import UserManagement from "./Admin/UserManagement.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminDashboard from "./Admin/AdminDashboard.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 function App() {
   return (
@@ -69,6 +70,8 @@ function App() {
             <UserManagement />
           </ProtectedRoute>
         } />
+        {/* Catch-all: render NotFound for any unknown route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
     </>
