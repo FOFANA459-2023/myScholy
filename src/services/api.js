@@ -97,10 +97,8 @@ class ApiService {
           config.headers['Authorization'] = `Bearer ${accessToken}`;
           response = await fetch(url, config);
         } catch (refreshError) {
-          // Refresh failed, redirect to login unless already on login to avoid loops
-          if (typeof window !== 'undefined' && window.location && window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
+          // Refresh failed, clear tokens and let the app handle navigation
+          this.removeTokens();
           throw new Error('Authentication failed');
         }
       }

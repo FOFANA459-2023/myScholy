@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -8,8 +8,9 @@ const ScholarshipDetail = React.memo(() => {
   const [scholarship, setScholarship] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  // Helper function for date formatting
+  // Helper function for date formatting - moved outside component to prevent recreation
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -20,21 +21,54 @@ const ScholarshipDetail = React.memo(() => {
 
   // Fetch scholarship details
   const fetchScholarship = useCallback(async () => {
+    if (!id) {
+      console.log('No ID provided for scholarship fetch');
+      return;
+    }
+    
+    if (hasFetched) {
+      console.log('Already fetched scholarship, skipping');
+      return;
+    }
+    
+    console.log('Fetching scholarship with ID:', id);
+    
     try {
+      setLoading(true);
+      setError(null);
+      setHasFetched(true);
+      
       const { data, error } = await apiService.getScholarship(id);
 
-      if (error) throw new Error(error);
+      if (error) {
+        console.error('API Error:', error);
+        throw new Error(error);
+      }
+      
+      console.log('Scholarship data received:', data);
       setScholarship(data);
     } catch (error) {
+      console.error('Error fetching scholarship:', error);
       setError('There was an issue fetching the scholarship details.');
+      setHasFetched(false); // Allow retry
     } finally {
       setLoading(false);
     }
+  }, [id, hasFetched]);
+
+  // Reset state when ID changes
+  useEffect(() => {
+    setScholarship(null);
+    setError(null);
+    setLoading(true);
+    setHasFetched(false);
   }, [id]);
 
   useEffect(() => {
-    fetchScholarship();
-  }, [fetchScholarship]);
+    if (id && !hasFetched) {
+      fetchScholarship();
+    }
+  }, [id, hasFetched, fetchScholarship]);
 
   // Format eligibility and benefits: first paragraph, then bullets
   const formatParagraphAndBullets = useCallback((text) => {
@@ -54,10 +88,24 @@ const ScholarshipDetail = React.memo(() => {
     );
   }, []);
 
+  // Memoize formatted content to prevent unnecessary re-renders
+  const formattedEligibility = useMemo(() => 
+    scholarship ? formatParagraphAndBullets(scholarship.eligibility) : null, 
+    [scholarship?.eligibility, formatParagraphAndBullets]
+  );
+
+  const formattedBenefits = useMemo(() => 
+    scholarship ? formatParagraphAndBullets(scholarship.benefits) : null, 
+    [scholarship?.benefits, formatParagraphAndBullets]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="spinner"></div> {/* Add spinner CSS */}
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading scholarship details...</p>
+        </div>
       </div>
     );
   }
@@ -65,7 +113,15 @@ const ScholarshipDetail = React.memo(() => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
-        <p className="text-lg text-red-500">{error}</p>
+        <div className="text-center">
+          <p className="text-lg text-red-500 mb-4">{error}</p>
+          <button
+            onClick={fetchScholarship}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -84,13 +140,19 @@ const ScholarshipDetail = React.memo(() => {
         {/* Navigation Buttons */}
         <div className="flex justify-between mb-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/scholarship-list');
+              }
+            }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow"
           >
             ← Back
           </button>
           <button
-            onClick={() => navigate('/scholarship-list')}
+            onClick={() => navigate('/scholarship-list', { replace: true })}
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
           >
             All Scholarships
@@ -120,13 +182,13 @@ const ScholarshipDetail = React.memo(() => {
             <div>
               <h4 className="text-lg font-semibold mb-2 text-blue-700">Eligibility</h4>
               <div className="bg-gray-50 p-4 rounded-lg break-words">
-                {formatParagraphAndBullets(scholarship.eligibility)}
+                {formattedEligibility}
               </div>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-2 text-blue-700">Benefits</h4>
               <div className="bg-gray-50 p-4 rounded-lg break-words">
-                {formatParagraphAndBullets(scholarship.benefits)}
+                {formattedBenefits}
               </div>
             </div>
             <div>
