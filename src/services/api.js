@@ -118,8 +118,21 @@ class ApiService {
   }
 
   // Scholarship methods
-  async getScholarships() {
-    return this.request('/scholarships/');
+  async getScholarships(page = 1, pageSize = 20) {
+    return this.request(`/scholarships/?page=${page}&page_size=${pageSize}`);
+  }
+
+  async searchScholarships(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    if (params.search) queryParams.append('search', params.search);
+    if (params.country) queryParams.append('country', params.country);
+    if (params.degree_level) queryParams.append('degree_level', params.degree_level);
+    if (params.application_ongoing) queryParams.append('application_ongoing', params.application_ongoing);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.page_size) queryParams.append('page_size', params.page_size);
+    
+    return this.request(`/scholarships/search/?${queryParams.toString()}`);
   }
 
   async getScholarship(id) {
