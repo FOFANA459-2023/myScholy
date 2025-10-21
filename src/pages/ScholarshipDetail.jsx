@@ -20,7 +20,7 @@ const ScholarshipDetail = React.memo(() => {
     });
   };
 
-  // Fetch scholarship details
+  // Fetch scholarship details with caching
   const fetchScholarship = useCallback(async () => {
     if (!id) {
       console.log('No ID provided for scholarship fetch');
@@ -38,6 +38,15 @@ const ScholarshipDetail = React.memo(() => {
       setLoading(true);
       setError(null);
       setHasFetched(true);
+      
+      // Check cache first
+      const cachedData = apiService.getCachedData(`scholarship_${id}`);
+      if (cachedData) {
+        console.log('Using cached scholarship data');
+        setScholarship(cachedData);
+        setLoading(false);
+        return;
+      }
       
       const { data, error } = await apiService.getScholarship(id);
 

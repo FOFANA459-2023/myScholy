@@ -72,6 +72,21 @@ const Filters = ({ searchTerm, setSearchTerm, selectedCountry, setSelectedCountr
   );
 };
 
+// Loading Skeleton Component
+const ScholarshipCardSkeleton = React.memo(() => (
+  <div className="bg-white shadow-lg rounded-lg p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded mb-2"></div>
+    <div className="space-y-2 mb-4">
+      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+    </div>
+    <div className="h-10 bg-gray-200 rounded"></div>
+  </div>
+));
+
 // Scholarship Card Component
 const ScholarshipCard = React.memo(({ scholarship }) => (
   <div className="bg-white shadow-lg rounded-lg p-6 hover:scale-105 transition flex flex-col h-full">
@@ -210,10 +225,53 @@ const ScholarshipList = React.memo(() => {
     }
   }, [currentPage, hasMore, loading, searchTerm, selectedCountry, selectedDegreeLevel, applicationOngoing]);
 
-  // Initial load
+  // Initial load with immediate cache check
   useEffect(() => {
+    // Try to load from cache first for instant display
+    const cachedData = apiService.getCachedData('search_page_1_size_20');
+    if (cachedData) {
+      setScholarships(cachedData.results || []);
+      setHasMore(cachedData.page < cachedData.total_pages);
+      setCurrentPage(cachedData.page);
+      if (cachedData.filters) {
+        setUniqueCountries(cachedData.filters.unique_countries || []);
+        setUniqueDegreeLevels(cachedData.filters.unique_degree_levels || []);
+      }
+      setLoading(false);
+    }
+    
+    // Always fetch fresh data in background
     performSearch();
   }, []);
+
+  // Preload next page for better UX
+  useEffect(() => {
+    if (scholarships.length > 0 && hasMore && !loading) {
+      const nextPage = currentPage + 1;
+      const preloadKey = `search_page_${nextPage}_size_20`;
+      const cachedNextPage = apiService.getCachedData(preloadKey);
+      
+      if (!cachedNextPage) {
+        // Preload next page in background
+        const preloadParams = {
+          search: searchTerm,
+          country: selectedCountry,
+          degree_level: selectedDegreeLevel,
+          application_ongoing: applicationOngoing,
+          page: nextPage,
+          page_size: 20
+        };
+        
+        apiService.searchScholarships(preloadParams).then(({ data }) => {
+          if (data) {
+            console.log(`Preloaded page ${nextPage}`);
+          }
+        }).catch(error => {
+          console.warn('Preload failed:', error);
+        });
+      }
+    }
+  }, [scholarships.length, hasMore, loading, currentPage, searchTerm, selectedCountry, selectedDegreeLevel, applicationOngoing]);
 
   // Handle search with debouncing
   const handleSearch = useCallback((params) => {
@@ -236,7 +294,18 @@ const ScholarshipList = React.memo(() => {
   }, [performSearch]);
 
   if (loading && scholarships.length === 0) {
-    return <div className="flex items-center justify-center h-screen bg-gray-100">Loading scholarships...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-3xl font-bold text-black mb-8">Scholarships</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <ScholarshipCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {

@@ -115,9 +115,19 @@ class ApiService {
     }
   }
 
-  // Scholarship methods
+  // Scholarship methods with caching
   async getScholarships(page = 1, pageSize = 20) {
-    return this.request(`/scholarships/?page=${page}&page_size=${pageSize}`);
+    const cacheKey = `scholarships_${page}_${pageSize}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) {
+      return { data: cached, error: null };
+    }
+    
+    const result = await this.request(`/scholarships/?page=${page}&page_size=${pageSize}`);
+    if (result.data) {
+      this.setCachedData(cacheKey, result.data, 300000); // 5 minutes
+    }
+    return result;
   }
 
   async searchScholarships(params = {}) {
@@ -130,11 +140,31 @@ class ApiService {
     if (params.page) queryParams.append('page', params.page);
     if (params.page_size) queryParams.append('page_size', params.page_size);
     
-    return this.request(`/scholarships/search/?${queryParams.toString()}`);
+    const cacheKey = `search_${queryParams.toString()}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) {
+      return { data: cached, error: null };
+    }
+    
+    const result = await this.request(`/scholarships/search/?${queryParams.toString()}`);
+    if (result.data) {
+      this.setCachedData(cacheKey, result.data, 120000); // 2 minutes
+    }
+    return result;
   }
 
   async getScholarship(id) {
-    return this.request(`/scholarships/${id}/`);
+    const cacheKey = `scholarship_${id}`;
+    const cached = this.getCachedData(cacheKey);
+    if (cached) {
+      return { data: cached, error: null };
+    }
+    
+    const result = await this.request(`/scholarships/${id}/`);
+    if (result.data) {
+      this.setCachedData(cacheKey, result.data, 600000); // 10 minutes
+    }
+    return result;
   }
 
   async createScholarship(scholarshipData) {
@@ -226,6 +256,50 @@ class ApiService {
   // Get current user from localStorage
   getCurrentUser() {
     return JSON.parse(localStorage.getItem('user') || 'null');
+  }
+
+  // Cache management methods
+  getCachedData(key) {
+    try {
+      const cached = localStorage.getItem(`cache_${key}`);
+      if (!cached) return null;
+      
+      const { data, timestamp, ttl } = JSON.parse(cached);
+      if (Date.now() - timestamp > ttl) {
+        localStorage.removeItem(`cache_${key}`);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.warn('Cache read error:', error);
+      return null;
+    }
+  }
+
+  setCachedData(key, data, ttl = 300000) {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now(),
+        ttl
+      };
+      localStorage.setItem(`cache_${key}`, JSON.stringify(cacheData));
+    } catch (error) {
+      console.warn('Cache write error:', error);
+    }
+  }
+
+  clearCache() {
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('cache_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Cache clear error:', error);
+    }
   }
 }
 
