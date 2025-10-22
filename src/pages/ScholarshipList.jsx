@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { apiService } from "../services/api";
+import { Link } from 'react-router-dom';
 
 // Filter Component
 const Filters = ({ searchTerm, setSearchTerm, selectedCountry, setSelectedCountry, selectedDegreeLevel, setSelectedDegreeLevel, applicationOngoing, setApplicationOngoing, uniqueCountries, uniqueDegreeLevels, onSearch }) => {
@@ -113,9 +114,9 @@ const ScholarshipCard = React.memo(({ scholarship }) => (
         <span className="ml-1">{scholarship.degree_level}</span>
       </p>
     </div>
-    <a href={`/scholarship-detail/${scholarship.id}`} className="mt-auto inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-center">
+    <Link to={`/scholarship-detail/${scholarship.id}`} className="mt-auto inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-center">
       View Details
-    </a>
+    </Link>
   </div>
 ));
 
