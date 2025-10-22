@@ -116,14 +116,14 @@ const Login = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label
-                htmlFor="email"
+                htmlFor="login-email"
                 className="block text-sm font-medium text-gray-700"
               >
                 Email address
               </label>
               <div className="mt-1">
                 <input
-                  id="email"
+                  id="login-email"
                   name="email"
                   type="email"
                   autoComplete="email"

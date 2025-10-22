@@ -101,14 +101,14 @@ function Contact() {
                   </div>
                   <div className="mb-6">
                     <label
-                      htmlFor="email"
+                      htmlFor="contact-email"
                       className="block text-sm font-medium text-blue-900 mb-2"
                     >
                       Email
                     </label>
                     <input
                       type="email"
-                      id="email"
+                      id="contact-email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
