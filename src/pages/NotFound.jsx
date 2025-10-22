@@ -23,7 +23,7 @@ const NotFound = () => {
   }, [navigate]);
 
   const quickLinks = [
-    { to: '/', label: 'Home', description: 'Return to homepage', icon: <FaHome /> },
+    { to: '/', label: 'Home', description: 'Return to homepage' },
     { to: '/scholarship-list', label: 'Scholarships', icon: <img src={Logo} alt="MyScholy" className="w-6 h-6 object-contain" />, description: 'Browse available scholarships' },
     { to: '/contact', label: 'Contact', description: 'Get help and support', icon: <FaSearch /> }
   ];

@@ -11,7 +11,7 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    phone: "",
+  phone: "",
     user_type: "student", // Always set to student
   });
 
@@ -50,8 +50,13 @@ const Signup = () => {
     }
     if (!formData.phone) {
       tempErrors.phone = "Phone number is required";
-    } else if (!/^\d{10}$/.test(formData.phone.replace(/[-\s]/g, ""))) {
-      tempErrors.phone = "Please enter a valid 10-digit phone number";
+    } else {
+      // Accept international format starting with + and country code (E.164-like)
+      const cleaned = formData.phone.replace(/[\s-()]/g, "");
+      // Basic E.164 validation: + followed by 8-15 digits
+      if (!/^\+\d{8,15}$/.test(cleaned)) {
+        tempErrors.phone = "Please enter your phone number in international format, starting with + and country code (e.g. +2348012345678).";
+      }
     }
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -201,6 +206,7 @@ const Signup = () => {
                     id="phone"
                     name="phone"
                     type="tel"
+                    placeholder="+234 801 234 5678"
                     required
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     value={formData.phone}
