@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaGraduationCap, FaSearch, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
+import { FaHome, FaGraduationCap, FaSearch, FaArrowLeft } from 'react-icons/fa';
+import Logo from '../assets/Logo.jpg';
 
 const NotFound = () => {
   const location = useLocation();
@@ -33,7 +34,7 @@ const NotFound = () => {
         {/* Main Error Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 text-red-600 mx-auto mb-6 shadow-lg">
-            <FaExclamationTriangle className="w-12 h-12" />
+            <img src={Logo} alt="MyScholy logo" className="w-12 h-12 object-contain rounded-full" />
           </div>
           
           <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
