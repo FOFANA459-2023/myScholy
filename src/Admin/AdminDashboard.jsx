@@ -298,7 +298,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
             <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
@@ -398,13 +398,13 @@ const AdminDashboard = () => {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Expired Scholarships
+                        Total Users
                       </dt>
-                      <dd className="text-2xl font-bold text-red-600">
+                      <dd className="text-2xl font-bold text-blue-600">
                         {statsLoading ? (
                           <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
                         ) : (
-                          stats.expired_scholarships
+                          stats.total_users
                         )}
                       </dd>
                     </dl>
@@ -436,7 +436,7 @@ const AdminDashboard = () => {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Recent (7 days)
+                        Recent (30 days)
                       </dt>
                       <dd className="text-2xl font-bold text-purple-600">
                         {statsLoading ? (
@@ -596,7 +596,135 @@ const AdminDashboard = () => {
                   <div className="font-medium">Export Active CSV</div>
                 </button>
               </div>
+
+            {/* Students Card */}
+            <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
+                      <svg
+                        className="h-5 w-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Students
+                      </dt>
+                      <dd className="text-2xl font-bold text-indigo-600">
+                        {statsLoading ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          stats.total_students
+                        )}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* Admins Card */}
+            <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                      <svg
+                        className="h-5 w-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Admins
+                      </dt>
+                      <dd className="text-2xl font-bold text-orange-600">
+                        {statsLoading ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          stats.total_admins
+                        )}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Scholarships by Country Chart */}
+            {stats.scholarships_by_country &&
+              stats.scholarships_by_country.length > 0 && (
+                <div className="bg-white overflow-hidden shadow-md rounded-lg mb-8">
+                  <div className="p-6">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                      Top Countries by Scholarships
+                    </h3>
+                    <div className="space-y-3">
+                      {stats.scholarships_by_country.map((country, index) => (
+                        <div
+                          key={country.host_country}
+                          className="flex items-center"
+                        >
+                          <div className="flex-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="font-medium text-gray-700">
+                                {country.host_country}
+                              </span>
+                              <span className="text-gray-500">
+                                {country.count} scholarships
+                              </span>
+                            </div>
+                            <div className="mt-1 relative">
+                              <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                                <div
+                                  style={{
+                                    width: `${(country.count / stats.scholarships_by_country[0]?.count) * 100}%`,
+                                  }}
+                                  className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+                                    index === 0
+                                      ? "bg-blue-500"
+                                      : index === 1
+                                        ? "bg-green-500"
+                                        : index === 2
+                                          ? "bg-yellow-500"
+                                          : index === 3
+                                            ? "bg-purple-500"
+                                            : "bg-gray-500"
+                                  }`}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
 
           {/* Recent Scholarships */}
