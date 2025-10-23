@@ -4,7 +4,13 @@ const API_BASE_URL =
   (typeof import.meta !== "undefined" &&
     import.meta.env &&
     import.meta.env.VITE_API_BASE_URL) ||
-  "http://localhost:8000/api";
+  "https://myscholyscholarship-backend.onrender.com/api";
+
+// Debug logging for mobile troubleshooting
+console.log("🌐 API Configuration Debug:");
+console.log("Environment:", import.meta.env?.MODE || "unknown");
+console.log("API Base URL:", API_BASE_URL);
+console.log("Available env vars:", import.meta.env);
 
 class ApiService {
   constructor() {
@@ -92,15 +98,30 @@ class ApiService {
     }
 
     try {
+      // Debug logging for mobile issues
+      console.log("🔍 API Request Debug:");
+      console.log("URL:", url);
+      console.log("Method:", config.method || "GET");
+      console.log("Headers:", config.headers);
+
       let response = await fetch(url, config);
+
+      console.log("📡 Response Status:", response.status);
+      console.log(
+        "📡 Response Headers:",
+        Object.fromEntries(response.headers.entries()),
+      );
 
       // If token expired, try to refresh and retry
       if (response.status === 401 && accessToken) {
+        console.log("🔑 Token expired, attempting refresh...");
         try {
           accessToken = await this.refreshToken();
           config.headers["Authorization"] = `Bearer ${accessToken}`;
           response = await fetch(url, config);
+          console.log("✅ Token refreshed, retry status:", response.status);
         } catch (refreshError) {
+          console.error("❌ Token refresh failed:", refreshError);
           // Refresh failed, clear tokens and let the app handle navigation
           this.removeTokens();
           throw new Error("Authentication failed");
@@ -108,15 +129,26 @@ class ApiService {
       }
 
       const data = await response.json();
+      console.log(
+        "📦 Response data preview:",
+        typeof data,
+        Object.keys(data || {}),
+      );
 
       if (!response.ok) {
-        throw new Error(
-          data.error || data.detail || `HTTP error! status: ${response.status}`,
-        );
+        const errorMessage =
+          data.error || data.detail || `HTTP error! status: ${response.status}`;
+        console.error("❌ API Error:", errorMessage);
+        throw new Error(errorMessage);
       }
 
+      console.log("✅ Request successful");
       return { data, error: null };
     } catch (error) {
+      console.error("🚨 API Request Failed:");
+      console.error("URL:", url);
+      console.error("Error:", error.message);
+      console.error("Stack:", error.stack);
       return { data: null, error: error.message };
     }
   }
