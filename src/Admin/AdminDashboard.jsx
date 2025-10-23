@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api";
 import NavigationButtons from "../components/NavigationButtons";
@@ -25,8 +25,11 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({
     total_scholarships: 0,
     active_scholarships: 0,
-    expired_scholarships: 0,
     recent_scholarships: 0,
+    total_users: 0,
+    total_students: 0,
+    total_admins: 0,
+    scholarships_by_degree: [],
   });
 
   useEffect(() => {
@@ -141,7 +144,7 @@ const AdminDashboard = () => {
   const exportUsersCSV = async () => {
     setExportLoading(true);
     try {
-      const { data, error } = await apiService.exportUsersCSV();
+      const { error } = await apiService.exportUsersCSV();
       if (error) throw new Error(error);
 
       setSnackbar({
@@ -205,11 +208,6 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleLogout = async () => {
-    await apiService.logout();
-    navigate("/");
-  };
-
   const refreshData = async () => {
     setStatsLoading(true);
     await fetchDashboardStatistics();
@@ -266,8 +264,8 @@ const AdminDashboard = () => {
                   Dashboard Overview
                 </h1>
                 <p className="text-gray-600">
-                  Welcome back, {user?.first_name || user?.username}! Here's
-                  your scholarship management overview.
+                  Welcome back, {user?.first_name || user?.username}!
+                  Here&apos;s your scholarship management overview.
                 </p>
               </div>
               <button
@@ -296,9 +294,8 @@ const AdminDashboard = () => {
               </button>
             </div>
           </div>
-
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
               <div className="p-5">
                 <div className="flex items-center">
@@ -379,44 +376,6 @@ const AdminDashboard = () => {
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                      <svg
-                        className="h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total Users
-                      </dt>
-                      <dd className="text-2xl font-bold text-blue-600">
-                        {statsLoading ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-                        ) : (
-                          stats.total_users
-                        )}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
                     <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
                       <svg
                         className="h-5 w-5 text-white"
@@ -451,7 +410,56 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
+          {/* Scholarships by Degree Level Chart */}
+          {stats.scholarships_by_degree &&
+            stats.scholarships_by_degree.length > 0 && (
+              <div className="bg-white overflow-hidden shadow-md rounded-lg mb-8">
+                <div className="p-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    Top Degree Levels by Scholarships
+                  </h3>
+                  <div className="space-y-3">
+                    {stats.scholarships_by_degree.map((degree, index) => (
+                      <div
+                        key={degree.degree_level}
+                        className="flex items-center"
+                      >
+                        <div className="flex-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium text-gray-700">
+                              {degree.degree_level}
+                            </span>
+                            <span className="text-gray-500">
+                              {degree.count} scholarships
+                            </span>
+                          </div>
+                          <div className="mt-1 relative">
+                            <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                              <div
+                                style={{
+                                  width: `${(degree.count / stats.scholarships_by_degree[0]?.count) * 100}%`,
+                                }}
+                                className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+                                  index === 0
+                                    ? "bg-blue-500"
+                                    : index === 1
+                                      ? "bg-green-500"
+                                      : index === 2
+                                        ? "bg-yellow-500"
+                                        : index === 3
+                                          ? "bg-purple-500"
+                                          : "bg-gray-500"
+                                }`}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           {/* Super Admin Panel */}
           {isSuperAdmin && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
@@ -504,11 +512,289 @@ const AdminDashboard = () => {
                       Export Users Data
                     </button>
                   </div>
+
+                  {/* Super Admin Only: Detailed User Statistics */}
+                  <div className="mt-6 pt-6 border-t border-yellow-200">
+                    <h4 className="text-md font-medium text-yellow-800 mb-4">
+                      User Analytics (Super Admin Only)
+                    </h4>
+
+                    {/* Total Users Overview */}
+                    <div className="mb-6">
+                      <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                        <div className="flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <svg
+                                className="h-8 w-8 text-blue-500 mr-2"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                                />
+                              </svg>
+                              <span className="text-lg font-medium text-gray-700">
+                                Total Platform Users
+                              </span>
+                            </div>
+                            <div className="text-4xl font-bold text-blue-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-12 w-24 rounded mx-auto"></div>
+                              ) : (
+                                stats.total_users
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              All registered users across the platform
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Student Statistics */}
+                    <div className="mb-6">
+                      <h5 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <svg
+                          className="h-4 w-4 mr-2 text-indigo-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                        Student Statistics
+                      </h5>
+                      <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-indigo-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : (
+                                stats.total_students
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Total Students
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : (
+                                Math.round(
+                                  (stats.total_students / stats.total_users) *
+                                    100,
+                                ) || 0
+                              )}
+                              %
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Of Total Users
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : (
+                                new Date().getFullYear() - 2020
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Years Active
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Admin Statistics */}
+                    <div className="mb-4">
+                      <h5 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <svg
+                          className="h-4 w-4 mr-2 text-orange-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                          />
+                        </svg>
+                        Admin Statistics
+                      </h5>
+                      <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-orange-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : (
+                                stats.total_admins
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Total Admins
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-red-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : (
+                                Math.round(
+                                  (stats.total_admins / stats.total_users) *
+                                    100,
+                                ) || 0
+                              )}
+                              %
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Of Total Users
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-yellow-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : (
+                                Math.round(
+                                  stats.total_scholarships /
+                                    (stats.total_admins || 1),
+                                )
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Scholarships per Admin
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-indigo-600">
+                              {statsLoading ? (
+                                <div className="animate-pulse bg-gray-200 h-8 w-12 rounded mx-auto"></div>
+                              ) : stats.total_admins > 0 ? (
+                                Math.round(
+                                  (stats.total_students / stats.total_admins) *
+                                    10,
+                                ) / 10
+                              ) : (
+                                0
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Students per Admin
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User Growth Visualization */}
+                    <div className="mb-4">
+                      <h5 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <svg
+                          className="h-4 w-4 mr-2 text-blue-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                          />
+                        </svg>
+                        User Distribution
+                      </h5>
+                      <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                        <div className="space-y-3">
+                          {/* Students Bar */}
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-indigo-700 font-medium">
+                                Students
+                              </span>
+                              <span className="text-gray-600">
+                                {stats.total_students} users
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${(stats.total_students / (stats.total_users || 1)) * 100}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Admins Bar */}
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-orange-700 font-medium">
+                                Admins
+                              </span>
+                              <span className="text-gray-600">
+                                {stats.total_admins} users
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-orange-500 h-2 rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${(stats.total_admins / (stats.total_users || 1)) * 100}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Other Users Bar */}
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-700 font-medium">
+                                Other Users
+                              </span>
+                              <span className="text-gray-600">
+                                {stats.total_users -
+                                  stats.total_students -
+                                  stats.total_admins}{" "}
+                                users
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-gray-500 h-2 rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${((stats.total_users - stats.total_students - stats.total_admins) / (stats.total_users || 1)) * 100}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
           {/* Quick Actions */}
           <div className="bg-white shadow rounded-lg mb-8">
             <div className="px-4 py-5 sm:p-6">
@@ -596,135 +882,7 @@ const AdminDashboard = () => {
                   <div className="font-medium">Export Active CSV</div>
                 </button>
               </div>
-
-            {/* Students Card */}
-            <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
-                      <svg
-                        className="h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Students
-                      </dt>
-                      <dd className="text-2xl font-bold text-indigo-600">
-                        {statsLoading ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-                        ) : (
-                          stats.total_students
-                        )}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
             </div>
-
-            {/* Admins Card */}
-            <div className="bg-white overflow-hidden shadow-md rounded-lg hover:shadow-lg transition-shadow">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
-                      <svg
-                        className="h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Admins
-                      </dt>
-                      <dd className="text-2xl font-bold text-orange-600">
-                        {statsLoading ? (
-                          <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-                        ) : (
-                          stats.total_admins
-                        )}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Scholarships by Country Chart */}
-            {stats.scholarships_by_country &&
-              stats.scholarships_by_country.length > 0 && (
-                <div className="bg-white overflow-hidden shadow-md rounded-lg mb-8">
-                  <div className="p-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                      Top Countries by Scholarships
-                    </h3>
-                    <div className="space-y-3">
-                      {stats.scholarships_by_country.map((country, index) => (
-                        <div
-                          key={country.host_country}
-                          className="flex items-center"
-                        >
-                          <div className="flex-1">
-                            <div className="flex justify-between text-sm">
-                              <span className="font-medium text-gray-700">
-                                {country.host_country}
-                              </span>
-                              <span className="text-gray-500">
-                                {country.count} scholarships
-                              </span>
-                            </div>
-                            <div className="mt-1 relative">
-                              <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
-                                <div
-                                  style={{
-                                    width: `${(country.count / stats.scholarships_by_country[0]?.count) * 100}%`,
-                                  }}
-                                  className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                                    index === 0
-                                      ? "bg-blue-500"
-                                      : index === 1
-                                        ? "bg-green-500"
-                                        : index === 2
-                                          ? "bg-yellow-500"
-                                          : index === 3
-                                            ? "bg-purple-500"
-                                            : "bg-gray-500"
-                                  }`}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
           </div>
 
           {/* Recent Scholarships */}
@@ -894,7 +1052,7 @@ const AdminDashboard = () => {
                     <div className="text-center text-sm text-gray-600">
                       Showing {visibleScholarships.length} of {totalCount}{" "}
                       scholarships
-                      {searchTerm && <span> for "{searchTerm}"</span>}
+                      {searchTerm && <span> for &quot;{searchTerm}&quot;</span>}
                       {statusFilter !== "all" && (
                         <span> • Filtered by {statusFilter}</span>
                       )}
@@ -930,7 +1088,6 @@ const AdminDashboard = () => {
               )}
             </div>
           </div>
-
           {/* Navigation */}
           <div className="mt-8">
             <NavigationButtons showBack={true} showHome={false} />
