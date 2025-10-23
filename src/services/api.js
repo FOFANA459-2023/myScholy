@@ -1,8 +1,10 @@
 // Prefer Vite env variable in production; fallback to deployed backend URL
 // Note: Use import.meta.env and prefix vars with VITE_
 const API_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-  'https://myscholyscholarship-backend.onrender.com/api';
+  (typeof import.meta !== "undefined" &&
+    import.meta.env &&
+    import.meta.env.VITE_API_BASE_URL) ||
+  "http://localhost:8000/api";
 
 class ApiService {
   constructor() {
@@ -11,53 +13,55 @@ class ApiService {
 
   // Get access token from localStorage
   getAccessToken() {
-    const tokens = JSON.parse(localStorage.getItem('tokens') || 'null');
+    const tokens = JSON.parse(localStorage.getItem("tokens") || "null");
     return tokens?.access || null;
   }
 
   // Get refresh token from localStorage
   getRefreshToken() {
-    const tokens = JSON.parse(localStorage.getItem('tokens') || 'null');
+    const tokens = JSON.parse(localStorage.getItem("tokens") || "null");
     return tokens?.refresh || null;
   }
 
   // Set tokens in localStorage
   setTokens(tokens) {
-    localStorage.setItem('tokens', JSON.stringify(tokens));
+    localStorage.setItem("tokens", JSON.stringify(tokens));
   }
 
   // Remove tokens from localStorage
   removeTokens() {
-    localStorage.removeItem('tokens');
-    localStorage.removeItem('user');
+    localStorage.removeItem("tokens");
+    localStorage.removeItem("user");
   }
 
   // Refresh access token
   async refreshToken() {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
-      throw new Error('No refresh token available');
+      throw new Error("No refresh token available");
     }
 
     try {
       const response = await fetch(`${this.baseURL}/auth/token/refresh/`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ refresh: refreshToken }),
       });
 
       if (!response.ok) {
-        throw new Error('Token refresh failed');
+        throw new Error("Token refresh failed");
       }
 
       const data = await response.json();
-      const tokens = this.getRefreshToken() ? { 
-        access: data.access, 
-        refresh: this.getRefreshToken() 
-      } : data;
-      
+      const tokens = this.getRefreshToken()
+        ? {
+            access: data.access,
+            refresh: this.getRefreshToken(),
+          }
+        : data;
+
       this.setTokens(tokens);
       return data.access;
     } catch (error) {
@@ -72,7 +76,7 @@ class ApiService {
 
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
@@ -80,10 +84,10 @@ class ApiService {
 
     // Add Authorization header if token exists
     if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
+      config.headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
-    if (config.body && typeof config.body === 'object') {
+    if (config.body && typeof config.body === "object") {
       config.body = JSON.stringify(config.body);
     }
 
@@ -94,19 +98,21 @@ class ApiService {
       if (response.status === 401 && accessToken) {
         try {
           accessToken = await this.refreshToken();
-          config.headers['Authorization'] = `Bearer ${accessToken}`;
+          config.headers["Authorization"] = `Bearer ${accessToken}`;
           response = await fetch(url, config);
         } catch (refreshError) {
           // Refresh failed, clear tokens and let the app handle navigation
           this.removeTokens();
-          throw new Error('Authentication failed');
+          throw new Error("Authentication failed");
         }
       }
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.detail || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          data.error || data.detail || `HTTP error! status: ${response.status}`,
+        );
       }
 
       return { data, error: null };
@@ -122,8 +128,10 @@ class ApiService {
     if (cached) {
       return { data: cached, error: null };
     }
-    
-    const result = await this.request(`/scholarships/?page=${page}&page_size=${pageSize}`);
+
+    const result = await this.request(
+      `/scholarships/?page=${page}&page_size=${pageSize}`,
+    );
     if (result.data) {
       this.setCachedData(cacheKey, result.data, 300000); // 5 minutes
     }
@@ -132,21 +140,25 @@ class ApiService {
 
   async searchScholarships(params = {}) {
     const queryParams = new URLSearchParams();
-    
-    if (params.search) queryParams.append('search', params.search);
-    if (params.country) queryParams.append('country', params.country);
-    if (params.degree_level) queryParams.append('degree_level', params.degree_level);
-    if (params.application_ongoing) queryParams.append('application_ongoing', params.application_ongoing);
-    if (params.page) queryParams.append('page', params.page);
-    if (params.page_size) queryParams.append('page_size', params.page_size);
-    
+
+    if (params.search) queryParams.append("search", params.search);
+    if (params.country) queryParams.append("country", params.country);
+    if (params.degree_level)
+      queryParams.append("degree_level", params.degree_level);
+    if (params.application_ongoing)
+      queryParams.append("application_ongoing", params.application_ongoing);
+    if (params.page) queryParams.append("page", params.page);
+    if (params.page_size) queryParams.append("page_size", params.page_size);
+
     const cacheKey = `search_${queryParams.toString()}`;
     const cached = this.getCachedData(cacheKey);
     if (cached) {
       return { data: cached, error: null };
     }
-    
-    const result = await this.request(`/scholarships/search/?${queryParams.toString()}`);
+
+    const result = await this.request(
+      `/scholarships/?${queryParams.toString()}`,
+    );
     if (result.data) {
       this.setCachedData(cacheKey, result.data, 120000); // 2 minutes
     }
@@ -159,7 +171,7 @@ class ApiService {
     if (cached) {
       return { data: cached, error: null };
     }
-    
+
     const result = await this.request(`/scholarships/${id}/`);
     if (result.data) {
       this.setCachedData(cacheKey, result.data, 600000); // 10 minutes
@@ -168,35 +180,56 @@ class ApiService {
   }
 
   async createScholarship(scholarshipData) {
-    return this.request('/scholarships/', {
-      method: 'POST',
+    const result = await this.request("/scholarships/", {
+      method: "POST",
       body: scholarshipData,
     });
+
+    if (result.data && !result.error) {
+      // Clear cache after successful creation
+      this.clearCache();
+    }
+
+    return result;
   }
 
   async updateScholarship(id, scholarshipData) {
-    return this.request(`/scholarships/${id}/`, {
-      method: 'PUT',
+    const result = await this.request(`/admin/scholarships/${id}/`, {
+      method: "PUT",
       body: scholarshipData,
     });
+
+    if (result.data && !result.error) {
+      // Clear cache after successful update
+      this.clearCache();
+    }
+
+    return result;
   }
 
   async deleteScholarship(id) {
-    return this.request(`/admin/scholarships/${id}/delete/`, {
-      method: 'DELETE',
+    const result = await this.request(`/admin/scholarships/${id}/delete/`, {
+      method: "DELETE",
     });
+
+    if (result.data && !result.error) {
+      // Clear cache after successful deletion
+      this.clearCache();
+    }
+
+    return result;
   }
 
   // Authentication methods
   async login(credentials) {
-    const { data, error } = await this.request('/auth/login/', {
-      method: 'POST',
+    const { data, error } = await this.request("/auth/login/", {
+      method: "POST",
       body: credentials,
     });
 
     if (data && data.tokens) {
       this.setTokens(data.tokens);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem("user", JSON.stringify(data.user));
     }
 
     return { data, error };
@@ -205,47 +238,138 @@ class ApiService {
   async logout() {
     const refreshToken = this.getRefreshToken();
     if (refreshToken) {
-      await this.request('/auth/logout/', {
-        method: 'POST',
+      await this.request("/auth/logout/", {
+        method: "POST",
         body: { refresh: refreshToken },
       });
     }
     this.removeTokens();
-    return { data: { message: 'Logout successful' }, error: null };
+    return { data: { message: "Logout successful" }, error: null };
   }
 
   async registerStudent(userData) {
-    return this.request('/auth/student/register/', {
-      method: 'POST',
+    return this.request("/auth/student/register/", {
+      method: "POST",
       body: userData,
     });
   }
 
-
   // Admin user management (new endpoints)
   async getAdmins() {
-    return this.request('/admins/', { method: 'GET' });
+    return this.request("/admins/", { method: "GET" });
   }
 
   async createAdmin(adminPayload) {
-    return this.request('/admins/', { method: 'POST', body: adminPayload });
+    return this.request("/admins/", { method: "POST", body: adminPayload });
   }
 
   async updateAdmin(userId, adminPayload) {
-    return this.request(`/admins/${userId}/`, { method: 'PATCH', body: adminPayload });
+    return this.request(`/admins/${userId}/`, {
+      method: "PATCH",
+      body: adminPayload,
+    });
   }
 
   async deleteAdmin(userId) {
-    return this.request(`/admins/${userId}/`, { method: 'DELETE' });
+    return this.request(`/admins/${userId}/`, { method: "DELETE" });
   }
 
   async getUserProfile() {
-    return this.request('/auth/profile/');
+    return this.request("/auth/profile/");
   }
 
   // Admin methods
-  async getAdminScholarships() {
-    return this.request('/admin/scholarships/');
+  async getAdminScholarships(params = {}) {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page);
+    if (params.page_size) queryParams.append("page_size", params.page_size);
+    if (params.search) queryParams.append("search", params.search);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString
+      ? `/admin/scholarships/?${queryString}`
+      : "/admin/scholarships/";
+
+    return this.request(endpoint);
+  }
+
+  // Admin scholarship management methods
+  async createAdminScholarship(scholarshipData) {
+    const result = await this.request("/admin/scholarships/", {
+      method: "POST",
+      body: scholarshipData,
+    });
+
+    if (result.data && !result.error) {
+      this.clearCache();
+    }
+
+    return result;
+  }
+
+  async getAdminScholarship(id) {
+    return this.request(`/admin/scholarships/${id}/`);
+  }
+
+  async updateAdminScholarship(id, scholarshipData) {
+    const result = await this.request(`/admin/scholarships/${id}/`, {
+      method: "PUT",
+      body: scholarshipData,
+    });
+
+    if (result.data && !result.error) {
+      this.clearCache();
+    }
+
+    return result;
+  }
+
+  async deleteAdminScholarship(id) {
+    const result = await this.request(`/admin/scholarships/${id}/`, {
+      method: "DELETE",
+    });
+
+    if (result.data && !result.error) {
+      this.clearCache();
+    }
+
+    return result;
+  }
+
+  // Admin Statistics
+  async getAdminStatistics() {
+    return this.request("/admin/statistics/");
+  }
+
+  // Super Admin User Export
+  async exportUsersCSV() {
+    try {
+      const response = await fetch(`${this.baseURL}/admin/users/export/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.getAccessToken()}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { data: { message: "Export successful" }, error: null };
+    } catch (error) {
+      return { data: null, error: error.message };
+    }
   }
 
   // Check if user is authenticated
@@ -255,7 +379,7 @@ class ApiService {
 
   // Get current user from localStorage
   getCurrentUser() {
-    return JSON.parse(localStorage.getItem('user') || 'null');
+    return JSON.parse(localStorage.getItem("user") || "null");
   }
 
   // Cache management methods
@@ -263,7 +387,7 @@ class ApiService {
     try {
       const cached = localStorage.getItem(`cache_${key}`);
       if (!cached) return null;
-      
+
       const { data, timestamp, ttl } = JSON.parse(cached);
       if (Date.now() - timestamp > ttl) {
         localStorage.removeItem(`cache_${key}`);
@@ -271,7 +395,7 @@ class ApiService {
       }
       return data;
     } catch (error) {
-      console.warn('Cache read error:', error);
+      console.warn("Cache read error:", error);
       return null;
     }
   }
@@ -281,28 +405,27 @@ class ApiService {
       const cacheData = {
         data,
         timestamp: Date.now(),
-        ttl
+        ttl,
       };
       localStorage.setItem(`cache_${key}`, JSON.stringify(cacheData));
     } catch (error) {
-      console.warn('Cache write error:', error);
+      console.warn("Cache write error:", error);
     }
   }
 
   clearCache() {
     try {
       const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith('cache_')) {
+      keys.forEach((key) => {
+        if (key.startsWith("cache_")) {
           localStorage.removeItem(key);
         }
       });
     } catch (error) {
-      console.warn('Cache clear error:', error);
+      console.warn("Cache clear error:", error);
     }
   }
 }
 
 export const apiService = new ApiService();
 export default apiService;
-
