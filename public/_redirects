@@ -1,0 +1,24 @@
+# Cloudflare Pages configuration for SPA routing
+# This file tells Cloudflare Pages to serve index.html for all routes
+# so that React Router can handle client-side routing
+
+# Handle all routes - redirect to index.html with 200 status for SPA
+/*    /index.html   200
+
+# Handle API routes - proxy to backend
+/api/*    https://myscholyscholarship-backend.onrender.com/api/:splat    200
+
+# Handle scholarship detail routes specifically
+/scholarship-detail/*    /index.html   200
+
+# Handle admin routes
+/admin-dashboard    /index.html   200
+/admin-scholarship-list    /index.html   200
+/post-scholarship    /index.html   200
+/update-scholarship/*    /index.html   200
+/user-management    /index.html   200
+
+# Handle other protected routes
+/scholarship-list    /index.html   200
+/login    /index.html   200
+/signup    /index.html   200

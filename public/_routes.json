@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "src": "/api/.*",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      "dest": "https://myscholyscholarship-backend.onrender.com/api/$0",
+      "status": 200
+    },
+    {
+      "src": ".*",
+      "dest": "/index.html"
+    }
+  ]
+}
