@@ -20,9 +20,12 @@ const PUBLIC_LINKS = [
 const ADMIN_LINKS = [
   { to: "/admin/scholarships", label: "Manage" },
   { to: "/admin/scholarships/new", label: "Post" },
+  { to: "/admin/directory", label: "Users" },
 ];
 
-const SUPER_ADMIN_LINKS = [{ to: "/admin/users", label: "Users" }];
+// The /admin/users screen manages admin accounts, so it reads "Admins" - the
+// full user roster lives under "Users" (/admin/directory) for every admin.
+const SUPER_ADMIN_LINKS = [{ to: "/admin/users", label: "Admins" }];
 
 function linkClass({ isActive }) {
   return cn(

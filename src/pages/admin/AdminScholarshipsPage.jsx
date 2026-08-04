@@ -95,7 +95,7 @@ export default function AdminScholarshipsPage() {
       )}
 
       {stats.data && (
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <Stat label="Total" value={formatNumber(stats.data.total_scholarships)} />
           <Stat label="Active" value={formatNumber(stats.data.active_scholarships)} />
           <Stat

@@ -105,6 +105,13 @@ export const admin = {
 
   users: (options) => api.get("/admins/", options),
 
+  /**
+   * Paginated, searchable roster of every account (the on-screen users CSV).
+   * Deliberately NOT given a `cache` config: personal data must never sit in
+   * sessionStorage, and the server already marks it `private, no-store`.
+   */
+  userDirectory: (params, options) => api.get("/admin/users/", { params, ...options }),
+
   createUser: (payload) =>
     api.post("/admins/", payload, { invalidates: [TAGS.admins, TAGS.statistics] }),
 

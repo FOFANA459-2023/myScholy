@@ -28,6 +28,7 @@ const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
 const AdminScholarshipsPage = lazy(() => import("./pages/admin/AdminScholarshipsPage.jsx"));
 const AdminArchivePage = lazy(() => import("./pages/admin/AdminArchivePage.jsx"));
+const AdminUserDirectoryPage = lazy(() => import("./pages/admin/AdminUserDirectoryPage.jsx"));
 const ScholarshipFormPage = lazy(() => import("./pages/admin/ScholarshipFormPage.jsx"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage.jsx"));
 
@@ -64,6 +65,7 @@ export default function App() {
             <Route index element={<Navigate to="/admin/scholarships" replace />} />
             <Route path="scholarships" element={<AdminScholarshipsPage />} />
             <Route path="scholarships/archive" element={<AdminArchivePage />} />
+            <Route path="directory" element={<AdminUserDirectoryPage />} />
             <Route path="scholarships/new" element={<ScholarshipFormPage mode="create" />} />
             <Route path="scholarships/:id/edit" element={<ScholarshipFormPage mode="edit" />} />
           </Route>

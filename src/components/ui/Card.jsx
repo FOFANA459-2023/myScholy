@@ -57,9 +57,13 @@ export function Badge({ tone = "neutral", className, ...props }) {
 /** Labelled value used on detail pages and dashboards. */
 export function Stat({ label, value, hint, className }) {
   return (
-    <div className={cn("surface px-5 py-4", className)}>
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-ink-900">{value}</p>
+    <div className={cn("surface px-4 py-3.5 sm:px-5 sm:py-4", className)}>
+      <p className="truncate text-xs font-medium uppercase tracking-wide text-ink-500">
+        {label}
+      </p>
+      <p className="mt-1 text-xl font-semibold tabular-nums text-ink-900 sm:text-2xl">
+        {value}
+      </p>
       {hint && <p className="mt-0.5 text-xs text-ink-500">{hint}</p>}
     </div>
   );
