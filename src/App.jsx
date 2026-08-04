@@ -1,81 +1,109 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar.jsx";
-import Footer from "./components/Footer.jsx";
-import ScholarshipList from "./pages/ScholarshipList.jsx";
-import ScholarshipDetail from "./pages/ScholarshipDetail.jsx";
-import PostScholarship from "./Admin/PostScholarship.jsx";
-import AdminScholarshipList from "./Admin/AdminScholarshipList.jsx";
-import UpdateScholarship from "./Admin/UpdateScholarship.jsx";
-import LandingPage from "./components/LandingPage.jsx";
-import Contact from "./pages/Contact.jsx";
-import Signup from "./student/Signup.jsx";
-import Login from "./student/Login.jsx";
-import WhatsAppInvite from "./components/WhatsAppInvite.jsx";
-// AdminNavbar removed; use Navbar for all, with admin logic inside Navbar
-import AccessDenied from "./pages/AccessDenied.jsx";
-import UserManagement from "./Admin/UserManagement.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import AdminDashboard from "./Admin/AdminDashboard.jsx";
-import NotFound from "./pages/NotFound.jsx";
+import React, { lazy } from "react";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
-function App() {
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import SiteLayout from "./components/layout/SiteLayout.jsx";
+import ProtectedRoute, { GuestOnlyRoute } from "./routes/ProtectedRoute.jsx";
+import LandingPage from "./pages/LandingPage.jsx";
+
+/**
+ * Everything except the landing page is code-split. The whole app used to ship
+ * as a single bundle, so a first-time visitor downloaded the admin panel, the
+ * super-admin panel and every form before seeing the hero image.
+ */
+const ScholarshipListPage = lazy(() => import("./pages/ScholarshipListPage.jsx"));
+const ScholarshipDetailPage = lazy(() => import("./pages/ScholarshipDetailPage.jsx"));
+const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
+const ProgramsPage = lazy(() => import("./pages/ProgramsPage.jsx"));
+const AssessmentPage = lazy(() => import("./pages/AssessmentPage.jsx"));
+const ConsultingPage = lazy(() => import("./pages/ConsultingPage.jsx"));
+const AcademyPage = lazy(() => import("./pages/AcademyPage.jsx"));
+const WhatsAppInvitePage = lazy(() => import("./pages/WhatsAppInvitePage.jsx"));
+const LoginPage = lazy(() => import("./pages/LoginPage.jsx"));
+const SignupPage = lazy(() => import("./pages/SignupPage.jsx"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage.jsx"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.jsx"));
+const AccessDeniedPage = lazy(() => import("./pages/AccessDeniedPage.jsx"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
+
+const AdminScholarshipsPage = lazy(() => import("./pages/admin/AdminScholarshipsPage.jsx"));
+const ScholarshipFormPage = lazy(() => import("./pages/admin/ScholarshipFormPage.jsx"));
+const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage.jsx"));
+
+export default function App() {
   return (
-    <>
-      <Navbar />
+    <ErrorBoundary>
       <Routes>
-        {/* Default Route */}
-        <Route path="/" element={<LandingPage />} />
+        <Route element={<SiteLayout />}>
+          <Route index element={<LandingPage />} />
 
-        {/* Public Routes */}
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/whatsapp-invite" element={
-          <ProtectedRoute requireLogin={true}>
-            <WhatsAppInvite />
-          </ProtectedRoute>
-        } />
-        <Route path="/access-denied" element={<AccessDenied />} />
-        
-        {/* Protected Routes - Require Login for Ordinary Users */}
-        <Route path="/scholarship-list" element={<ScholarshipList />} />
-        <Route path="/scholarship-detail/:id" element={<ScholarshipDetail />} />
-        
-        {/* Protected Admin Routes */}
-        {/* AdminNavbar removed; use Navbar for all, with admin logic inside Navbar */}
-        <Route path="/post-scholarship" element={
-          <ProtectedRoute requiredRole="admin">
-            <PostScholarship />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin-scholarship-list" element={
-          <ProtectedRoute requiredRole="admin">
-            <AdminScholarshipList />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin-dashboard" element={
-          <ProtectedRoute requiredRole="admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/update-scholarship/:id" element={
-          <ProtectedRoute requiredRole="admin">
-            <UpdateScholarship />
-          </ProtectedRoute>
-        } />
-        {/* User Management for admin */}
-        <Route path="/user-management" element={
-          <ProtectedRoute requiredRole="admin">
-            <UserManagement />
-          </ProtectedRoute>
-        } />
-        {/* Catch-all: render NotFound for any unknown route */}
-        <Route path="*" element={<NotFound />} />
+          {/* Public */}
+          <Route path="scholarships" element={<ScholarshipListPage />} />
+          <Route path="scholarships/:id" element={<ScholarshipDetailPage />} />
+          <Route path="programs" element={<ProgramsPage />} />
+          <Route path="assessment" element={<AssessmentPage />} />
+          <Route path="consulting" element={<ConsultingPage />} />
+          <Route path="academy" element={<AcademyPage />} />
+          <Route path="contact" element={<ContactPage />} />
+          {/* The FAQ moved onto the landing page; keep old links working. */}
+          <Route path="faq" element={<Navigate to="/#faq" replace />} />
+          <Route path="whatsapp" element={<WhatsAppInvitePage />} />
+          <Route path="access-denied" element={<AccessDeniedPage />} />
+
+          {/* Guests only */}
+          <Route element={<GuestOnlyRoute />}>
+            <Route path="login" element={<LoginPage />} />
+            <Route path="signup" element={<SignupPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
+          </Route>
+
+          {/* Admin */}
+          <Route path="admin" element={<ProtectedRoute require="admin" />}>
+            <Route index element={<Navigate to="/admin/scholarships" replace />} />
+            <Route path="scholarships" element={<AdminScholarshipsPage />} />
+            <Route path="scholarships/new" element={<ScholarshipFormPage mode="create" />} />
+            <Route path="scholarships/:id/edit" element={<ScholarshipFormPage mode="edit" />} />
+          </Route>
+
+          {/* Super admin */}
+          <Route path="admin/users" element={<ProtectedRoute require="superadmin" />}>
+            <Route index element={<AdminUsersPage />} />
+          </Route>
+
+          {/* Legacy URLs from the previous routing scheme */}
+          <Route path="scholarship-list" element={<Navigate to="/scholarships" replace />} />
+          <Route
+            path="scholarship-detail/:id"
+            element={<LegacyScholarshipRedirect />}
+          />
+          <Route
+            path="admin-scholarship-list"
+            element={<Navigate to="/admin/scholarships" replace />}
+          />
+          <Route
+            path="post-scholarship"
+            element={<Navigate to="/admin/scholarships/new" replace />}
+          />
+          <Route path="update-scholarship/:id" element={<LegacyUpdateRedirect />} />
+          <Route path="super-admin-panel" element={<Navigate to="/admin/users" replace />} />
+          <Route path="admin-login" element={<Navigate to="/login" replace />} />
+          <Route path="whatsapp-invite" element={<Navigate to="/whatsapp" replace />} />
+
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Routes>
-      <Footer />
-    </>
+    </ErrorBoundary>
   );
 }
 
-export default App;
+/* Preserve bookmarked links from the old URL scheme. */
+function LegacyScholarshipRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/scholarships/${id}`} replace />;
+}
+
+function LegacyUpdateRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/admin/scholarships/${id}/edit`} replace />;
+}

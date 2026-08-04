@@ -2,12 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/src/assets/Logo.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyScholy</title>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <title>MyScholy - Scholarships for students worldwide</title>
+    <meta
+      name="description"
+      content="Discover fully funded scholarships, grants and opportunities from around the world. Search by country, degree level and deadline - free to browse, free to apply."
+    />
+    <meta name="theme-color" content="#0c4a6e" />
+
+    <!-- Open Graph / social previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MyScholy - Scholarships for students worldwide" />
+    <meta
+      property="og:description"
+      content="Discover fully funded scholarships, grants and opportunities from around the world."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Warm up the TLS handshake to the API before the first request fires. -->
+    <link rel="preconnect" href="https://myscholyscholarship-backend.onrender.com" />
+    <link rel="dns-prefetch" href="https://myscholyscholarship-backend.onrender.com" />
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui, sans-serif">
+        MyScholy needs JavaScript enabled to show the scholarship board.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,0 +1,92 @@
+# Automated review on every pull request.
+#
+#  - dependency-review blocks PRs that introduce known-vulnerable packages
+#    (active immediately, no configuration needed on public repos).
+#  - Claude reviews the diff for security, auth logic, performance and edge
+#    cases. It activates automatically once the ANTHROPIC_API_KEY secret is
+#    added; until then the step skips with a notice instead of failing.
+
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  claude-review:
+    name: Claude code review
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    env:
+      # Job-level `if` cannot read secrets; this env bridge lets the steps
+      # below skip cleanly while the key is not configured yet.
+      HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: Skip notice
+        if: env.HAS_ANTHROPIC_KEY != 'true'
+        run: echo "::notice::ANTHROPIC_API_KEY not configured - Claude review skipped. Add the secret to enable automated reviews."
+      - uses: actions/checkout@v4
+        if: env.HAS_ANTHROPIC_KEY == 'true'
+        with:
+          fetch-depth: 2
+      - uses: anthropics/claude-code-action@v1
+        if: env.HAS_ANTHROPIC_KEY == 'true'
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this pull request (REPO: ${{ github.repository }}, PR: ${{ github.event.pull_request.number }}).
+
+            Project context: React (Vite) frontend for MyScholy, a scholarship
+            board. Talks to a Django REST API with JWT auth (roles: anonymous /
+            student / admin / super admin). Frontend role checks are UX only -
+            enforcement lives in the backend.
+
+            Review the diff with these priorities, in order:
+
+            1. SECURITY: XSS (dangerouslySetInnerHTML, unsanitised user content
+               rendered as HTML), secrets or tokens committed/logged/exposed to
+               the bundle (anything VITE_-prefixed ships to the browser), unsafe
+               URL construction, open redirects.
+            2. AUTH LOGIC: routes missing ProtectedRoute/GuestOnlyRoute guards,
+               tokens persisted or transmitted unsafely, session state treated
+               as server-side enforcement.
+            3. UNHANDLED EDGE CASES: null/empty API responses, missing error and
+               loading states, race conditions in effects, aborted requests,
+               timezone/locale issues.
+            4. PERFORMANCE: unnecessary re-renders, missing memoisation on hot
+               paths, oversized bundles, uncached repeat fetches, layout thrash.
+            5. CORRECTNESS vs. tests: does the change break documented
+               behaviour; are new code paths covered (Vitest/Playwright)?
+
+            Rules:
+            - Use inline comments for file-specific findings.
+            - Only flag real issues you are confident about - do not pad the review.
+            - If the PR is clean, say so briefly.
+            - End with a one-paragraph summary: overall risk (low/medium/high)
+              and anything that must be fixed before merge.
+          claude_args: |
+            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"

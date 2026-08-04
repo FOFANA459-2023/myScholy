@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ink-50 text-ink-800 antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One consistent focus ring across every interactive element, instead of the
+     mix of focus:ring-blue-600 / focus:ring-indigo-500 / focus:outline-none
+     that was scattered through the components. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-tight text-ink-900;
+    text-wrap: balance;
+  }
+
+  img {
+    @apply max-w-full;
+  }
+}
+
+@layer components {
+  /* Shared surface for cards and panels. */
+  .surface {
+    @apply rounded-2xl border border-ink-200/70 bg-white shadow-card;
+  }
+
+  /* Used by the hero and section headers over the brand gradient. */
+  .on-brand {
+    @apply text-white [text-shadow:0_1px_2px_rgb(15_23_42_/_0.35)];
+  }
+
+  /* Placeholders breathe in place. The old treatment swept a white gradient
+     across them, which read as a glare/mirror passing over the page. */
+  .skeleton {
+    @apply animate-pulse-soft rounded-md bg-ink-200/70;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
