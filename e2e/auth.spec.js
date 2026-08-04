@@ -27,17 +27,22 @@ test.describe("authentication", () => {
     page,
   }) => {
     await login(page, ADMIN);
-    // The seeded account is a super admin, whose home is the users screen;
-    // the admin nav (Manage) is visible for both admin tiers.
-    await expect(page).toHaveURL(/\/admin\//);
-    await expect(page.getByRole("link", { name: "Manage" })).toBeVisible();
+    // Admins land on the dashboard; the nav link reads "Admin Dashboard" or
+    // "Super Admin Dashboard" depending on the tier (the seeded account is a
+    // super admin).
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(
+      page.getByRole("link", { name: /admin dashboard/i }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: /log out/i }).click();
     // Logging out from an admin page may land on / or /login (see Navbar
     // handleLogout); what matters is the signed-out state itself.
     await expect(page).toHaveURL(/\/(login)?$/);
     await expect(page.getByRole("link", { name: /log in/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Manage" })).not.toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /admin dashboard/i }),
+    ).not.toBeVisible();
   });
 
   test("admin routes are locked for anonymous visitors", async ({ page }) => {
