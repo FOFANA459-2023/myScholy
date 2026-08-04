@@ -45,9 +45,12 @@
   }
 
   /* Placeholders breathe in place. The old treatment swept a white gradient
-     across them, which read as a glare/mirror passing over the page. */
+     across them, which read as a glare/mirror passing over the page.
+     --skeleton-delay is set per card, so a grid of placeholders pulses as a
+     gentle wave instead of blinking in unison. */
   .skeleton {
     @apply animate-pulse-soft rounded-md bg-ink-200/70;
+    animation-delay: var(--skeleton-delay, 0ms);
   }
 }
 

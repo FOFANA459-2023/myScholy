@@ -27,6 +27,7 @@ const AccessDeniedPage = lazy(() => import("./pages/AccessDeniedPage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
 const AdminScholarshipsPage = lazy(() => import("./pages/admin/AdminScholarshipsPage.jsx"));
+const AdminArchivePage = lazy(() => import("./pages/admin/AdminArchivePage.jsx"));
 const ScholarshipFormPage = lazy(() => import("./pages/admin/ScholarshipFormPage.jsx"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage.jsx"));
 
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="admin" element={<ProtectedRoute require="admin" />}>
             <Route index element={<Navigate to="/admin/scholarships" replace />} />
             <Route path="scholarships" element={<AdminScholarshipsPage />} />
+            <Route path="scholarships/archive" element={<AdminArchivePage />} />
             <Route path="scholarships/new" element={<ScholarshipFormPage mode="create" />} />
             <Route path="scholarships/:id/edit" element={<ScholarshipFormPage mode="edit" />} />
           </Route>

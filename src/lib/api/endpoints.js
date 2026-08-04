@@ -57,6 +57,13 @@ export const scholarships = {
       invalidates: [TAGS.scholarships, TAGS.statistics],
     }),
 
+  /** Return an archived scholarship to the live board. The server rejects it
+   *  with a clear message if the deadline has already passed. */
+  repost: (id) =>
+    api.post(`/admin/scholarships/${id}/repost/`, undefined, {
+      invalidates: [TAGS.scholarships, TAGS.statistics],
+    }),
+
   exportCsv: () => download("/admin/scholarships/export/", "scholarships.csv"),
 };
 

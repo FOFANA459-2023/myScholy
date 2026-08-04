@@ -74,9 +74,12 @@ export default function AdminScholarshipsPage() {
     <Page width="wide">
       <PageHeader
         title="Manage scholarships"
-        description="Post, edit and retire opportunities on the board."
+        description="The live board: everything here is visible and still accepting applications. Closed and hidden scholarships move to the archive."
         actions={
           <>
+            <Button variant="outline" to="/admin/scholarships/archive">
+              View archive
+            </Button>
             <Button variant="outline" onClick={exportCsv.mutate} loading={exportCsv.isPending}>
               Export CSV
             </Button>

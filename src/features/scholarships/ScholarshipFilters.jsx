@@ -24,7 +24,7 @@ const ScholarshipFilters = React.memo(function ScholarshipFilters({
   };
 
   const hasFilters =
-    values.q || values.country || values.degree || values.ongoing || values.ordering !== "newest";
+    values.q || values.country || values.degree || values.ordering !== "newest";
 
   return (
     <section className="surface mb-8 p-4 sm:p-5" aria-label="Filter scholarships">
@@ -54,7 +54,10 @@ const ScholarshipFilters = React.memo(function ScholarshipFilters({
         />
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Every scholarship on the board is still accepting applications -
+          closed and hidden ones live in the admin archive - so there is no
+          longer an "ongoing" toggle here. */}
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div>
           <label htmlFor="filter-country" className="sr-only">
             Host country
@@ -109,16 +112,6 @@ const ScholarshipFilters = React.memo(function ScholarshipFilters({
             <option value="oldest">Oldest first</option>
           </select>
         </div>
-
-        <label className="flex h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-ink-300 bg-white px-3.5 text-sm transition-colors hover:border-ink-400">
-          <input
-            type="checkbox"
-            checked={values.ongoing}
-            onChange={set("ongoing")}
-            className="h-4 w-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
-          />
-          <span className="text-ink-700">Still accepting applications</span>
-        </label>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink-200/70 pt-3">

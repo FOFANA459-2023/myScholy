@@ -1,7 +1,14 @@
 import React from "react";
 
 import { Page, PageHeader } from "../components/layout/SiteLayout.jsx";
-import { Button, EmptyState, ErrorState, Pagination, SkeletonGrid } from "../components/ui/index.js";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  LoadingDots,
+  Pagination,
+  SkeletonGrid,
+} from "../components/ui/index.js";
 import ScholarshipCard from "../features/scholarships/ScholarshipCard.jsx";
 import ScholarshipFilters from "../features/scholarships/ScholarshipFilters.jsx";
 import useScholarshipQuery from "../features/scholarships/useScholarshipQuery.js";
@@ -28,7 +35,10 @@ export default function ScholarshipListPage() {
       {query.error ? (
         <ErrorState error={query.error} onRetry={query.refetch} />
       ) : query.isLoading ? (
-        <SkeletonGrid count={6} />
+        <>
+          <LoadingDots label="Rounding up scholarships for you..." className="mb-4" />
+          <SkeletonGrid count={6} />
+        </>
       ) : query.results.length === 0 ? (
         <EmptyState
           title="No scholarships match those filters"

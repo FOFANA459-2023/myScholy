@@ -99,11 +99,17 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.45" },
         },
+        // The three dots in LoadingDots hop in sequence.
+        "bounce-dot": {
+          "0%, 60%, 100%": { transform: "none" },
+          "30%": { transform: "translateY(-6px)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.35s ease-out both",
         "progress-slide": "progress-slide 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite",
         "pulse-soft": "pulse-soft 1.5s ease-in-out infinite",
+        "bounce-dot": "bounce-dot 1.1s ease-in-out infinite",
       },
     },
   },

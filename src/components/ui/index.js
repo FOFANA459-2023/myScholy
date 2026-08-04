@@ -9,6 +9,7 @@ export {
   CardSkeleton,
   EmptyState,
   ErrorState,
+  LoadingDots,
   PageLoader,
   RouteProgress,
   Skeleton,

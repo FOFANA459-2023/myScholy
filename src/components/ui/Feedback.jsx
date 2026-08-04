@@ -61,15 +61,16 @@ export function Spinner({ className, label = "Loading" }) {
   );
 }
 
-export function Skeleton({ className }) {
-  return <span className={cn("skeleton block", className)} aria-hidden="true" />;
+export function Skeleton({ className, style }) {
+  return <span className={cn("skeleton block", className)} style={style} aria-hidden="true" />;
 }
 
 /** Card-shaped placeholder that matches ScholarshipCard's real dimensions, so
- *  the layout does not shift when data arrives. */
-export function CardSkeleton() {
+ *  the layout does not shift when data arrives. `style` may carry a
+ *  `--skeleton-delay` custom property; the children inherit it. */
+export function CardSkeleton({ style }) {
   return (
-    <div className="surface p-5">
+    <div className="surface p-5" style={style}>
       <Skeleton className="h-5 w-4/5" />
       <Skeleton className="mt-3 h-3 w-2/5" />
       <div className="mt-5 space-y-2">
@@ -81,12 +82,35 @@ export function CardSkeleton() {
   );
 }
 
+/** Placeholder cards whose pulses ripple across the grid as a wave, rather
+ *  than every card blinking at once. */
 export function SkeletonGrid({ count = 6 }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: count }, (_, index) => (
-        <CardSkeleton key={index} />
+        <CardSkeleton key={index} style={{ "--skeleton-delay": `${index * 140}ms` }} />
       ))}
+    </div>
+  );
+}
+
+/** Three brand-coloured dots hopping in sequence, with a short message.
+ *  Friendlier than a bare spinner, and no gradient ever sweeps the page. */
+export function LoadingDots({ label = "Loading", className }) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      className={cn("flex items-center justify-center gap-1.5 py-4", className)}
+    >
+      {["bg-brand-700", "bg-brand-400", "bg-gold-500"].map((color, index) => (
+        <span
+          key={color}
+          className={cn("h-2.5 w-2.5 rounded-full animate-bounce-dot", color)}
+          style={{ animationDelay: `${index * 160}ms` }}
+        />
+      ))}
+      <span className="ml-2 text-sm font-medium text-ink-500">{label}</span>
     </div>
   );
 }

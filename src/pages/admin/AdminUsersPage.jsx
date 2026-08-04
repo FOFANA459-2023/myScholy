@@ -248,7 +248,11 @@ export default function AdminUsersPage() {
           {users.isLoading ? (
             <CardBody className="space-y-3">
               {Array.from({ length: 4 }, (_, index) => (
-                <Skeleton key={index} className="h-12" />
+                <Skeleton
+                  key={index}
+                  className="h-12"
+                  style={{ "--skeleton-delay": `${index * 140}ms` }}
+                />
               ))}
             </CardBody>
           ) : users.error ? (

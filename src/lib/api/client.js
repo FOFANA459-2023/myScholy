@@ -326,7 +326,13 @@ export const api = {
   delete: (path, options) => request(path, { ...options, method: "DELETE" }),
 };
 
-/** Download an authenticated file (CSV exports) without leaving the page. */
+/**
+ * Download an authenticated file (CSV exports) without leaving the page.
+ *
+ * The server names each export (e.g. ``scholarships_export_2026-08-04.csv``)
+ * via Content-Disposition; the ``filename`` argument is only the fallback if
+ * that header is missing.
+ */
 export async function download(path, filename) {
   const response = await fetch(buildUrl(path), {
     headers: { Authorization: `Bearer ${getAccessToken()}` },
@@ -334,6 +340,9 @@ export async function download(path, filename) {
   if (!response.ok) {
     throw new ApiError("Export failed. Please try again.", { status: response.status });
   }
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const serverName = disposition.match(/filename="?([^";]+)"?/)?.[1];
+  if (serverName) filename = serverName;
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
