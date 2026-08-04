@@ -38,6 +38,20 @@ export function formatShortDate(value) {
   return date ? shortDate.format(date) : "-";
 }
 
+const dateTime = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+/** "Aug 5, 2026, 9:14 AM" - for audit-ish fields like last login. */
+export function formatDateTime(value) {
+  const date = toDate(value);
+  return date ? dateTime.format(date) : "-";
+}
+
 export function formatNumber(value) {
   return typeof value === "number" ? number.format(value) : "-";
 }

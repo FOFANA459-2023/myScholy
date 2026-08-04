@@ -55,16 +55,41 @@ export function Badge({ tone = "neutral", className, ...props }) {
 }
 
 /** Labelled value used on detail pages and dashboards. */
-export function Stat({ label, value, hint, className }) {
+const STAT_TONES = {
+  brand: "bg-brand-50 text-brand-700",
+  gold: "bg-gold-50 text-gold-700",
+  emerald: "bg-emerald-50 text-emerald-700",
+  ink: "bg-ink-100 text-ink-600",
+};
+
+export function Stat({ label, value, hint, icon, tone = "brand", className }) {
   return (
-    <div className={cn("surface px-4 py-3.5 sm:px-5 sm:py-4", className)}>
-      <p className="truncate text-xs font-medium uppercase tracking-wide text-ink-500">
-        {label}
-      </p>
-      <p className="mt-1 text-xl font-semibold tabular-nums text-ink-900 sm:text-2xl">
-        {value}
-      </p>
-      {hint && <p className="mt-0.5 text-xs text-ink-500">{hint}</p>}
+    <div
+      className={cn(
+        "surface flex items-start justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4",
+        className,
+      )}
+    >
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium uppercase tracking-wide text-ink-500">
+          {label}
+        </p>
+        <p className="mt-1 text-xl font-semibold tabular-nums text-ink-900 sm:text-2xl">
+          {value}
+        </p>
+        {hint && <p className="mt-0.5 text-xs text-ink-500">{hint}</p>}
+      </div>
+      {icon && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex",
+            STAT_TONES[tone] ?? STAT_TONES.brand,
+          )}
+        >
+          {icon}
+        </span>
+      )}
     </div>
   );
 }

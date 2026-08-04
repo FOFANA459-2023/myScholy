@@ -13,7 +13,7 @@ import {
 } from "../../components/ui/index.js";
 import { admin as adminApi } from "../../lib/api/endpoints.js";
 import { useApi, useDebouncedValue, useMutation } from "../../lib/hooks.js";
-import { formatShortDate } from "../../lib/format.js";
+import { formatDateTime, formatShortDate } from "../../lib/format.js";
 
 const ROLE_TONE = {
   "Super Admin": "gold",
@@ -77,6 +77,7 @@ export default function AdminUserDirectoryPage() {
   return (
     <Page width="wide">
       <PageHeader
+        back={{ to: "/admin", label: "Dashboard" }}
         title="User directory"
         description="Every registered account, column for column the same as the users CSV export. Super admins only."
         actions={
@@ -192,7 +193,7 @@ export default function AdminUserDirectoryPage() {
                       {formatShortDate(row.date_joined)}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-600">
-                      {row.last_login ? formatShortDate(row.last_login) : "Never"}
+                      {row.last_login ? formatDateTime(row.last_login) : "Never"}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <Badge tone={row.is_active ? "success" : "neutral"}>
@@ -228,7 +229,7 @@ export default function AdminUserDirectoryPage() {
                     ["Residence", row.country_of_residence],
                     ["Education", row.education_level],
                     ["Joined", formatShortDate(row.date_joined)],
-                    ["Last login", row.last_login ? formatShortDate(row.last_login) : "Never"],
+                    ["Last login", row.last_login ? formatDateTime(row.last_login) : "Never"],
                   ].map(([label, value]) => (
                     <div key={label} className="min-w-0">
                       <dt className="text-xs uppercase tracking-wide text-ink-400">{label}</dt>

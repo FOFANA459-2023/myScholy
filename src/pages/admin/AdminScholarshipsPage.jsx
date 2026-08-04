@@ -19,6 +19,12 @@ import useScholarshipQuery from "../../features/scholarships/useScholarshipQuery
 
 const STATUS_TONE = { closed: "neutral", urgent: "danger", soon: "gold", open: "success" };
 
+const statIcon = (path) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+  </svg>
+);
+
 function ConfirmDelete({ scholarship, onCancel, onConfirm, isPending }) {
   return (
     <div
@@ -73,6 +79,7 @@ export default function AdminScholarshipsPage() {
   return (
     <Page width="wide">
       <PageHeader
+        back={{ to: "/admin", label: "Dashboard" }}
         title="Manage scholarships"
         description="The live board: everything here is visible and still accepting applications. Closed and hidden scholarships move to the archive."
         actions={
@@ -96,16 +103,30 @@ export default function AdminScholarshipsPage() {
 
       {stats.data && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <Stat label="Total" value={formatNumber(stats.data.total_scholarships)} />
-          <Stat label="Active" value={formatNumber(stats.data.active_scholarships)} />
+          <Stat
+            label="Total"
+            value={formatNumber(stats.data.total_scholarships)}
+            tone="ink"
+            icon={statIcon("M4 6h16M4 10h16M4 14h10M4 18h7")}
+          />
+          <Stat
+            label="Active"
+            value={formatNumber(stats.data.active_scholarships)}
+            tone="brand"
+            icon={statIcon("M3.5 12.5 9 18 20.5 6.5")}
+          />
           <Stat
             label="Accepting applications"
             value={formatNumber(stats.data.open_scholarships)}
+            tone="emerald"
+            icon={statIcon("M12 8v4l2.5 2.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z")}
           />
           <Stat
             label="Added this month"
             value={formatNumber(stats.data.recent_scholarships)}
             hint="last 30 days"
+            tone="gold"
+            icon={statIcon("M12 5v14m-7-7h14")}
           />
         </div>
       )}

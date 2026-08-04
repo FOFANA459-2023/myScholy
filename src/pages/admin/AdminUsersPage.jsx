@@ -20,6 +20,12 @@ import { useSession } from "../../lib/auth.js";
 import { formatNumber } from "../../lib/format.js";
 import * as v from "../../lib/validation.js";
 
+const statIcon = (path) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+  </svg>
+);
+
 const EMPTY_USER = {
   first_name: "",
   last_name: "",
@@ -31,9 +37,11 @@ const EMPTY_USER = {
 /**
  * User management, open to every admin - with role-aware controls.
  *
- * Any admin can add another (regular) administrator. Removing one, promoting
- * to super admin, and exporting the users CSV are super-admin actions: the
- * API rejects them for regular admins, so the controls simply are not shown.
+ * Any admin can add another (regular) administrator. Everything about the
+ * existing team is super-admin territory: the roster of administrators, the
+ * remove action, the super-admin promotion and the users CSV export. The API
+ * enforces all of it, so for a regular admin those pieces are simply never
+ * fetched or rendered.
  */
 export default function AdminUsersPage() {
   const { user: currentUser, isSuperAdmin } = useSession();
@@ -41,7 +49,11 @@ export default function AdminUsersPage() {
   // refresh on return to the tab. keepPreviousData holds the rendered list
   // steady during each refresh instead of flashing skeletons.
   const LIVE = { keepPreviousData: true, refetchInterval: 30_000, refetchOnFocus: true };
-  const users = useApi(({ signal }) => adminApi.users({ signal }), [], LIVE);
+  // The roster endpoint is super-admin-only; a regular admin never calls it.
+  const users = useApi(({ signal }) => adminApi.users({ signal }), [], {
+    ...LIVE,
+    enabled: isSuperAdmin,
+  });
   const stats = useApi(({ signal }) => adminApi.statistics({ signal }), [], LIVE);
 
   const [form, setForm] = useState(EMPTY_USER);
@@ -136,11 +148,12 @@ export default function AdminUsersPage() {
   return (
     <Page width="wide">
       <PageHeader
+        back={{ to: "/admin", label: "Dashboard" }}
         title="User management"
         description={
           isSuperAdmin
             ? "Add or remove administrators and review who has access."
-            : "Add administrators and review who has access. Removing one takes a super admin."
+            : "Add another administrator to the team. Viewing or removing the admin roster takes a super admin."
         }
         actions={
           isSuperAdmin ? (
@@ -162,20 +175,37 @@ export default function AdminUsersPage() {
       )}
 
       {stats.data && (
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Total users" value={formatNumber(stats.data.total_users)} />
-          <Stat label="Students" value={formatNumber(stats.data.total_students)} />
-          <Stat label="Administrators" value={formatNumber(stats.data.total_admins)} />
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Stat
+            label="Total users"
+            value={formatNumber(stats.data.total_users)}
+            tone="brand"
+            icon={statIcon("M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM5 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1")}
+          />
+          <Stat
+            label="Students"
+            value={formatNumber(stats.data.total_students)}
+            tone="emerald"
+            icon={statIcon("m12 3 9 5-9 5-9-5 9-5Zm-5 8v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4")}
+          />
+          <Stat
+            label="Administrators"
+            value={formatNumber(stats.data.total_admins)}
+            tone="gold"
+            icon={statIcon("M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-3Z")}
+          />
           <Stat
             label="New this month"
             value={formatNumber(stats.data.monthly_signups)}
             hint={`${formatNumber(stats.data.total_countries)} countries represented`}
+            tone="ink"
+            icon={statIcon("M3 17 9 11l4 4 8-8m0 0h-5m5 0v5")}
           />
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
+      <div className={isSuperAdmin ? "grid gap-6 lg:grid-cols-5" : "mx-auto max-w-xl"}>
+        <Card className={isSuperAdmin ? "lg:col-span-2" : undefined}>
           <CardHeader>
             <CardTitle>Add an administrator</CardTitle>
           </CardHeader>
@@ -253,6 +283,9 @@ export default function AdminUsersPage() {
           </CardBody>
         </Card>
 
+        {/* Who currently has access - super admins only. A regular admin can
+            grow the team but must not be able to enumerate it. */}
+        {isSuperAdmin && (
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Administrators</CardTitle>
@@ -309,6 +342,7 @@ export default function AdminUsersPage() {
             </ul>
           )}
         </Card>
+        )}
       </div>
     </Page>
   );

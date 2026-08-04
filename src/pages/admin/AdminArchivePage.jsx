@@ -82,6 +82,7 @@ export default function AdminArchivePage() {
   return (
     <Page width="wide">
       <PageHeader
+        back={{ to: "/admin", label: "Dashboard" }}
         title="Scholarship archive"
         description="Closed and hidden opportunities. Repost one to put it back on the board, or edit it to extend a passed deadline."
         actions={<Button variant="outline" to="/admin/scholarships">Back to live board</Button>}
