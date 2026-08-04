@@ -86,8 +86,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: npm audit (fail on high/critical)
-        run: npm audit --audit-level=high
+      # Fails on high/critical advisories except the documented allowlist in
+      # scripts/audit-gate.mjs (each entry says why it is safe and when to
+      # remove it).
+      - name: npm audit gate (fail on high/critical)
+        run: npm run audit:gate
 
   # Full-stack e2e: Playwright drives the production build against the real
   # Django backend, checked out from its own repository as a sibling

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Note } from "../../components/ui/index.js";
 import { FAQ_GROUPS, FEATURED_FAQS } from "./faqData.js";

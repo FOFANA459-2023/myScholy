@@ -1,6 +1,6 @@
 import React from "react";
 import { FaWhatsapp } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { Page } from "../components/layout/SiteLayout.jsx";
 import { Button, Card, CardBody } from "../components/ui/index.js";

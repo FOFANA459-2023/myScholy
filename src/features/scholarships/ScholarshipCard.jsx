@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { deadlineStatus, formatRelativeDays, formatShortDate } from "../../lib/format.js";
 import { Badge, Card } from "../../components/ui/index.js";

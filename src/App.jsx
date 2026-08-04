@@ -1,5 +1,5 @@
 import React, { lazy } from "react";
-import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router";
 
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import SiteLayout from "./components/layout/SiteLayout.jsx";
