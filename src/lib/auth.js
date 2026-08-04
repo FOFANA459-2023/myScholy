@@ -90,8 +90,8 @@ export function displayName(user) {
 
 /** Landing route for a role, used after login and by guards. */
 export function homeRouteFor(role) {
-  if (role === "superadmin") return "/admin/users";
-  if (role === "admin") return "/admin/scholarships";
+  // Both admin roles land on the dashboard, which fans out per role.
+  if (role === "superadmin" || role === "admin") return "/admin";
   return "/";
 }
 

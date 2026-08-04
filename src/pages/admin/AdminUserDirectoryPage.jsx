@@ -78,7 +78,7 @@ export default function AdminUserDirectoryPage() {
     <Page width="wide">
       <PageHeader
         title="User directory"
-        description="Every registered account with its profile details - the live view of the users export."
+        description="Every registered account, column for column the same as the users CSV export. Super admins only."
         actions={
           <Button variant="outline" onClick={exportCsv.mutate} loading={exportCsv.isPending}>
             Export users CSV
@@ -124,21 +124,26 @@ export default function AdminUserDirectoryPage() {
         />
       ) : (
         <Card className={roster.isRefreshing ? "opacity-60 transition-opacity" : undefined}>
-          {/* Desktop table; the wide column set scrolls inside the card. */}
+          {/* Desktop table: one column per users-CSV column, same order.
+              The wide set scrolls horizontally inside the card. */}
           <div className="hidden overflow-x-auto md:block">
             <table className="min-w-full divide-y divide-ink-200">
               <thead className="bg-ink-50">
                 <tr>
                   {[
-                    "User",
-                    "Role",
+                    "ID",
+                    "Username",
+                    "First Name",
+                    "Last Name",
+                    "Email",
+                    "User Type",
                     "Phone",
-                    "Citizenship",
-                    "Residence",
-                    "Education",
-                    "Joined",
-                    "Last login",
-                    "Status",
+                    "Country of Citizenship",
+                    "Country of Residence",
+                    "Education Level",
+                    "Date Joined",
+                    "Last Login",
+                    "Is Active",
                   ].map((heading) => (
                     <th
                       key={heading}
@@ -153,13 +158,20 @@ export default function AdminUserDirectoryPage() {
               <tbody className="divide-y divide-ink-200/70">
                 {rows.map((row) => (
                   <tr key={row.id} className="transition-colors hover:bg-ink-50/70">
-                    <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-ink-900">
-                        {fullName(row) || row.username}
-                      </p>
-                      <p className="text-xs text-ink-500">
-                        @{row.username} &middot; {row.email}
-                      </p>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm tabular-nums text-ink-500">
+                      {row.id}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-ink-900">
+                      {row.username}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-600">
+                      {row.first_name || "-"}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-600">
+                      {row.last_name || "-"}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-600">
+                      {row.email || "-"}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <RoleBadge role={row.user_type} />
@@ -184,7 +196,7 @@ export default function AdminUserDirectoryPage() {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <Badge tone={row.is_active ? "success" : "neutral"}>
-                        {row.is_active ? "Active" : "Disabled"}
+                        {row.is_active ? "Yes" : "No"}
                       </Badge>
                     </td>
                   </tr>
@@ -210,6 +222,7 @@ export default function AdminUserDirectoryPage() {
                 </div>
                 <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
                   {[
+                    ["ID", row.id],
                     ["Phone", row.phone],
                     ["Citizenship", row.country_of_citizenship],
                     ["Residence", row.country_of_residence],

@@ -26,6 +26,7 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.jsx"));
 const AccessDeniedPage = lazy(() => import("./pages/AccessDeniedPage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage.jsx"));
 const AdminScholarshipsPage = lazy(() => import("./pages/admin/AdminScholarshipsPage.jsx"));
 const AdminArchivePage = lazy(() => import("./pages/admin/AdminArchivePage.jsx"));
 const AdminUserDirectoryPage = lazy(() => import("./pages/admin/AdminUserDirectoryPage.jsx"));
@@ -60,19 +61,21 @@ export default function App() {
             <Route path="reset-password" element={<ResetPasswordPage />} />
           </Route>
 
-          {/* Admin */}
+          {/* Admin: the dashboard fans out to every admin surface. User
+              management is open to every admin (the API limits what a
+              non-super admin can do there); the user directory is not. */}
           <Route path="admin" element={<ProtectedRoute require="admin" />}>
-            <Route index element={<Navigate to="/admin/scholarships" replace />} />
+            <Route index element={<AdminDashboardPage />} />
             <Route path="scholarships" element={<AdminScholarshipsPage />} />
             <Route path="scholarships/archive" element={<AdminArchivePage />} />
-            <Route path="directory" element={<AdminUserDirectoryPage />} />
             <Route path="scholarships/new" element={<ScholarshipFormPage mode="create" />} />
             <Route path="scholarships/:id/edit" element={<ScholarshipFormPage mode="edit" />} />
+            <Route path="users" element={<AdminUsersPage />} />
           </Route>
 
-          {/* Super admin */}
-          <Route path="admin/users" element={<ProtectedRoute require="superadmin" />}>
-            <Route index element={<AdminUsersPage />} />
+          {/* Super admin only */}
+          <Route path="admin/directory" element={<ProtectedRoute require="superadmin" />}>
+            <Route index element={<AdminUserDirectoryPage />} />
           </Route>
 
           {/* Legacy URLs from the previous routing scheme */}

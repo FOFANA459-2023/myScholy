@@ -29,15 +29,14 @@ const EMPTY_USER = {
 };
 
 /**
- * Super admin panel.
+ * User management, open to every admin - with role-aware controls.
  *
- * The previous version authenticated against `supabase.auth.getSession()` and
- * read a Supabase `users` table. Login has always issued a Django JWT, so that
- * session was never present and this page redirected every visitor. It now
- * uses the Django admin endpoints that already existed but were unused.
+ * Any admin can add another (regular) administrator. Removing one, promoting
+ * to super admin, and exporting the users CSV are super-admin actions: the
+ * API rejects them for regular admins, so the controls simply are not shown.
  */
 export default function AdminUsersPage() {
-  const { user: currentUser } = useSession();
+  const { user: currentUser, isSuperAdmin } = useSession();
   // Keep the roster mirroring the database: poll while the page is open and
   // refresh on return to the tab. keepPreviousData holds the rendered list
   // steady during each refresh instead of flashing skeletons.
@@ -138,11 +137,21 @@ export default function AdminUsersPage() {
     <Page width="wide">
       <PageHeader
         title="User management"
-        description="Add administrators and review who has access."
+        description={
+          isSuperAdmin
+            ? "Add or remove administrators and review who has access."
+            : "Add administrators and review who has access. Removing one takes a super admin."
+        }
         actions={
-          <Button variant="outline" onClick={exportUsers.mutate} loading={exportUsers.isPending}>
-            Export users CSV
-          </Button>
+          isSuperAdmin ? (
+            <Button
+              variant="outline"
+              onClick={exportUsers.mutate}
+              loading={exportUsers.isPending}
+            >
+              Export users CSV
+            </Button>
+          ) : undefined
         }
       />
 
@@ -217,21 +226,25 @@ export default function AdminUsersPage() {
                 required
               />
 
-              <label className="flex items-start gap-2.5 rounded-lg border border-gold-200 bg-gold-50 px-4 py-3 text-sm">
-                <input
-                  type="checkbox"
-                  name="is_super_admin"
-                  checked={form.is_super_admin}
-                  onChange={handleChange}
-                  className="mt-0.5 h-4 w-4 rounded border-gold-300 text-gold-600 focus:ring-gold-500"
-                />
-                <span className="text-gold-900">
-                  Make them a super admin
-                  <span className="mt-0.5 block text-xs text-gold-700">
-                    Super admins can add and remove other administrators.
+              {/* Only super admins may mint super admins - the API enforces
+                  it, so the option is hidden rather than shown-and-rejected. */}
+              {isSuperAdmin && (
+                <label className="flex items-start gap-2.5 rounded-lg border border-gold-200 bg-gold-50 px-4 py-3 text-sm">
+                  <input
+                    type="checkbox"
+                    name="is_super_admin"
+                    checked={form.is_super_admin}
+                    onChange={handleChange}
+                    className="mt-0.5 h-4 w-4 rounded border-gold-300 text-gold-600 focus:ring-gold-500"
+                  />
+                  <span className="text-gold-900">
+                    Make them a super admin
+                    <span className="mt-0.5 block text-xs text-gold-700">
+                      Super admins can add and remove other administrators.
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              )}
 
               <Button type="submit" fullWidth loading={create.isPending}>
                 {create.isPending ? "Adding..." : "Add administrator"}
@@ -279,7 +292,7 @@ export default function AdminUsersPage() {
                       <Badge tone={row.is_super_admin ? "gold" : "brand"}>
                         {row.is_super_admin ? "Super admin" : "Admin"}
                       </Badge>
-                      {!row.is_super_admin && !isSelf && (
+                      {isSuperAdmin && !row.is_super_admin && !isSelf && (
                         <Button
                           size="sm"
                           variant="danger"
