@@ -14,13 +14,13 @@ test.describe("authentication", () => {
     page,
   }) => {
     await login(page, { username: ADMIN.username, password: "wrong-password" });
-    await expect(page.getByText(/password isn't right/i)).toBeVisible();
+    await expect(page.getByText(/password is not correct/i)).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
 
   test("unknown account is told so and offered signup", async ({ page }) => {
     await login(page, { username: "nobody-here", password: "whatever123" });
-    await expect(page.getByText(/couldn't find an account/i)).toBeVisible();
+    await expect(page.getByText(/could not find an account/i)).toBeVisible();
   });
 
   test("admin can sign in, sees admin navigation, and can log out", async ({
