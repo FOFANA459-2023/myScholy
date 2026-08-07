@@ -9,7 +9,7 @@ const AUTO_OPEN_DELAY_MS = 5000;
 
 const GREETING = {
   role: "model",
-  text: "Hi! I'm the MyScholy assistant. Ask me anything about scholarships on the site — by country, degree level or deadline — or about how MyScholy works.",
+  text: "Hello! I am the MyScholy assistant. Ask me anything about scholarships on the site — by country, degree level or deadline — or about how MyScholy works.",
 };
 
 /**

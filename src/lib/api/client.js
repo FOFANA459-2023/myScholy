@@ -194,7 +194,7 @@ async function performRequest(url, { method, body, auth, signal, timeout, retryO
   } catch (error) {
     if (error.name === "AbortError") throw error;
     throw new ApiError(
-      "We couldn't reach the server. Check your connection and try again.",
+      "We could not reach the server. Check your connection and try again.",
       { status: 0 },
     );
   } finally {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 
-import { Alert, Button, LoadingDots } from "../../components/ui/index.js";
+import { Button, LoadingDots } from "../../components/ui/index.js";
 import { assistant as assistantApi } from "../../lib/api/endpoints.js";
 
 /**
@@ -42,7 +42,7 @@ const QUESTIONS = [
   {
     id: "region",
     question: "Where would you like to study?",
-    help: "We'll match you with scholarships in that part of the world.",
+    help: "We will match you with scholarships in that part of the world.",
     options: [
       { value: "Anywhere", label: "Anywhere - show me everything" },
       { value: "Africa", label: "Africa" },
@@ -104,7 +104,7 @@ function assess(answers) {
   if (answers.level === "other") {
     return {
       eligible: false,
-      title: "Let's talk first",
+      title: "We should talk first",
       message:
         "We specialise in undergraduate, graduate and postgraduate applications. Tell us what you are working towards and we will let you know honestly whether we are the right fit.",
       actions: [{ label: "Send us a message", to: "/contact" }],
@@ -163,9 +163,10 @@ export default function EligibilityCheck() {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
-  // Friendly quota message from the server (429) - shown above the fallback
-  // result so the visitor knows when the personalized plan comes back.
-  const [aiNotice, setAiNotice] = useState(null);
+  // Quota response from the server (429): {message, requiresLogin}. Replaces
+  // the result entirely - guests are invited to log in, logged-in visitors
+  // are told when their allowance resets.
+  const [aiLimit, setAiLimit] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -189,13 +190,18 @@ export default function EligibilityCheck() {
 
   const runAi = (finalAnswers) => {
     setAiLoading(true);
-    setAiNotice(null);
+    setAiLimit(null);
     assistantApi
       .assessment(finalAnswers)
       .then((data) => setAiResult(data))
       .catch((error) => {
         setAiResult(null);
-        if (error?.status === 429 && error.message) setAiNotice(error.message);
+        if (error?.status === 429 && error.message) {
+          setAiLimit({
+            message: error.message,
+            requiresLogin: Boolean(error.data?.requires_login),
+          });
+        }
       })
       .finally(() => setAiLoading(false));
   };
@@ -219,7 +225,7 @@ export default function EligibilityCheck() {
     setSubmitted(false);
     setAiResult(null);
     setAiLoading(false);
-    setAiNotice(null);
+    setAiLimit(null);
   };
 
   const progress = submitted ? 100 : Math.round((step / total) * 100);
@@ -235,9 +241,9 @@ export default function EligibilityCheck() {
             Are we a fit for you?
           </h2>
           <p className="mt-4 text-ink-600">
-            Six quick questions, about a minute. You&apos;ll get a personalized
-            plan with scholarships from our board that match you. Your answers
-            aren&apos;t stored - they only shape your result.
+            Six quick questions, about a minute. You will receive a
+            personalized plan with scholarships from our board that match you.
+            Your answers are not stored - they only shape your result.
           </p>
         </div>
 
@@ -381,13 +387,36 @@ export default function EligibilityCheck() {
                   Start over
                 </button>
               </div>
+            ) : aiLimit ? (
+              <div aria-live="polite">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold-900">
+                  Assessment result
+                </span>
+
+                <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
+                  {aiLimit.requiresLogin
+                    ? "Please log in to view your result"
+                    : "You have reached your daily limit"}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-ink-600">
+                  {aiLimit.message}
+                </p>
+
+                <div className="mt-7 flex flex-wrap gap-3">
+                  {aiLimit.requiresLogin ? (
+                    <>
+                      <Button to="/login">Log in</Button>
+                      <Button to="/signup" variant="outline">
+                        Create a free account
+                      </Button>
+                    </>
+                  ) : (
+                    <Button to="/scholarships">Browse scholarships</Button>
+                  )}
+                </div>
+              </div>
             ) : (
               <div aria-live="polite">
-                {aiNotice && (
-                  <Alert tone="info" className="mb-5" title="Personalized plan paused">
-                    {aiNotice} Here is your standard result in the meantime.
-                  </Alert>
-                )}
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                     result.eligible

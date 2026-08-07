@@ -76,7 +76,7 @@ export default function ScholarshipExtract({ onExtract }) {
       <p className="text-sm font-semibold text-brand-900">Auto-fill with AI</p>
       <p className="mb-3 mt-0.5 text-sm text-ink-500">
         Paste the announcement, drop in the page link, or upload the PDF - the
-        form below fills itself. Fields the source doesn&apos;t mention stay
+        form below fills itself. Fields the source does not mention stay
         blank; review everything before posting.
       </p>
 
