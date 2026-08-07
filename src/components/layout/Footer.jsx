@@ -4,7 +4,7 @@ import { FaEnvelope, FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa"
 
 const QUICK_LINKS = [
   { to: "/scholarships", label: "Scholarships" },
-  { to: "/programs", label: "Programs & services" },
+  { to: "/assessment", label: "Fit assessment" },
   { to: "/whatsapp", label: "WhatsApp community" },
   { to: "/contact", label: "Contact us" },
 ];
@@ -35,7 +35,7 @@ export default function Footer() {
 
           <div>
             <h2 className="mb-4 text-base font-bold uppercase tracking-wide">
-              Programs &amp; services
+              Services
             </h2>
             <ul className="space-y-2 text-sm text-white/85">
               {SERVICES.map((link) => (

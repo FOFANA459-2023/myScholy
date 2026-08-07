@@ -1,16 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 
-import { Button } from "../../components/ui/index.js";
+import { Button, LoadingDots } from "../../components/ui/index.js";
+import { assistant as assistantApi } from "../../lib/api/endpoints.js";
 
 /**
  * Self-serve fit assessment.
  *
- * Mirrors step 1 of the roadmap ("eligibility / fit assessment") so a visitor
- * can find out where they stand before contacting anyone. Everything is
- * evaluated in the browser - no answers are stored or sent anywhere.
+ * Six quick questions. When the backend has an AI key configured, the result
+ * is personalized: a Gemini-written plan grounded with live scholarships from
+ * the board that match the visitor's level and region. Without a key (or if
+ * the call fails) the original rule-based verdict renders instead, so the
+ * quiz always produces something.
  *
- * Kept deliberately separate from RoadmapSection: that section is static
- * marketing copy, this one owns interactive state.
+ * Only the quiz option values are sent - no name, email or anything personal.
  */
 
 const QUESTIONS = [
@@ -34,6 +37,19 @@ const QUESTIONS = [
       { value: "graduate", label: "Graduate (Masters)" },
       { value: "postgraduate", label: "Postgraduate (PhD, fellowship)" },
       { value: "other", label: "Something else", terminal: true },
+    ],
+  },
+  {
+    id: "region",
+    question: "Where would you like to study?",
+    help: "We'll match you with scholarships in that part of the world.",
+    options: [
+      { value: "Anywhere", label: "Anywhere - show me everything" },
+      { value: "Africa", label: "Africa" },
+      { value: "Asia", label: "Asia" },
+      { value: "Europe", label: "Europe" },
+      { value: "North America", label: "North America" },
+      { value: "Middle East", label: "Middle East" },
     ],
   },
   {
@@ -73,7 +89,7 @@ const LEVEL_LABELS = {
   postgraduate: "postgraduate",
 };
 
-/** Turn a completed answer set into an eligibility verdict plus next steps. */
+/** Rule-based fallback verdict, used when the AI result is unavailable. */
 function assess(answers) {
   if (answers.age === "under18") {
     return {
@@ -128,8 +144,6 @@ function assess(answers) {
   return {
     eligible: true,
     title: "You are a fit for our consulting",
-    // Consulting has not opened, so the result describes the plan and points
-    // at the waiting list rather than inviting a booking that cannot happen.
     message: `Based on your answers, here is what your ${
       LEVEL_LABELS[answers.level]
     } application journey with us would cover once consulting opens:`,
@@ -146,15 +160,47 @@ export default function EligibilityCheck() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    assistantApi
+      .status()
+      .then((data) => {
+        if (!cancelled && data?.enabled) setAiEnabled(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const total = QUESTIONS.length;
   const current = QUESTIONS[step];
-  const result = useMemo(() => (submitted ? assess(answers) : null), [submitted, answers]);
+  const result = useMemo(
+    () => (submitted ? assess(answers) : null),
+    [submitted, answers],
+  );
+
+  const runAi = (finalAnswers) => {
+    setAiLoading(true);
+    assistantApi
+      .assessment(finalAnswers)
+      .then((data) => setAiResult(data))
+      .catch(() => setAiResult(null))
+      .finally(() => setAiLoading(false));
+  };
 
   const choose = (option) => {
-    setAnswers((prev) => ({ ...prev, [current.id]: option.value }));
+    const next = { ...answers, [current.id]: option.value };
+    setAnswers(next);
     if (option.terminal || step + 1 === total) {
       setSubmitted(true);
+      // Terminal outcomes (too young, different goal) keep the honest static
+      // answer; the personalized plan is for people we can actually help.
+      if (!option.terminal && aiEnabled) runAi(next);
     } else {
       setStep(step + 1);
     }
@@ -164,6 +210,8 @@ export default function EligibilityCheck() {
     setAnswers({});
     setStep(0);
     setSubmitted(false);
+    setAiResult(null);
+    setAiLoading(false);
   };
 
   const progress = submitted ? 100 : Math.round((step / total) * 100);
@@ -179,8 +227,9 @@ export default function EligibilityCheck() {
             Are we a fit for you?
           </h2>
           <p className="mt-4 text-ink-600">
-            Five quick questions, about a minute. Nothing is saved or sent - you will
-            just see where you stand.
+            Six quick questions, about a minute. You&apos;ll get a personalized
+            plan with scholarships from our board that match you. Your answers
+            aren&apos;t stored - they only shape your result.
           </p>
         </div>
 
@@ -247,6 +296,83 @@ export default function EligibilityCheck() {
                   </button>
                 )}
               </fieldset>
+            ) : aiLoading ? (
+              <div className="py-10 text-center" aria-live="polite">
+                <LoadingDots />
+                <p className="mt-4 text-sm font-medium text-ink-600">
+                  Building your personalized plan…
+                </p>
+                <p className="mt-1 text-xs text-ink-400">
+                  Matching your answers with live scholarships on the board.
+                </p>
+              </div>
+            ) : aiResult ? (
+              <div aria-live="polite">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                  Personalized plan
+                </span>
+
+                <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
+                  {aiResult.headline}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-ink-600">
+                  {aiResult.summary}
+                </p>
+
+                {aiResult.next_steps?.length > 0 && (
+                  <ol className="mt-5 space-y-2.5">
+                    {aiResult.next_steps.map((stepText, index) => (
+                      <li key={stepText} className="flex items-start gap-3 text-sm">
+                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold-100 text-xs font-bold text-gold-800">
+                          {index + 1}
+                        </span>
+                        <span className="text-ink-700">{stepText}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                {aiResult.scholarships?.length > 0 && (
+                  <div className="mt-7">
+                    <p className="text-sm font-semibold text-ink-900">
+                      Live scholarships that match you
+                    </p>
+                    <ul className="mt-3 space-y-2">
+                      {aiResult.scholarships.map((row) => (
+                        <li key={row.id}>
+                          <Link
+                            to={`/scholarships/${row.id}`}
+                            className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm transition-colors hover:border-brand-300 hover:bg-brand-50/50"
+                          >
+                            <span className="font-medium text-brand-800">
+                              {row.name}
+                            </span>
+                            <span className="text-xs text-ink-500">
+                              {row.host_country} · {row.degree_level} · closes{" "}
+                              {row.deadline}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Button to="/scholarships">Browse all scholarships</Button>
+                  <Button to="/whatsapp" variant="outline">
+                    Get notified when consulting opens
+                  </Button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={restart}
+                  className="mt-6 rounded text-sm font-medium text-ink-500 underline-offset-4 hover:text-brand-700 hover:underline"
+                >
+                  Start over
+                </button>
+              </div>
             ) : (
               <div aria-live="polite">
                 <span

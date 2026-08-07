@@ -45,8 +45,8 @@ export default function LandingPage() {
             <Button to="/scholarships" size="lg" variant="gold">
               Explore scholarships
             </Button>
-            <Button to="/programs" size="lg" variant="onBrand">
-              See our programs
+            <Button to="/assessment" size="lg" variant="onBrand">
+              Take the assessment
             </Button>
           </div>
 
@@ -120,8 +120,6 @@ export default function LandingPage() {
 
       <UniversityCarousel />
       <RoadmapSection />
-      {/* Programs & services deliberately does not appear here - it has its
-          own page at /programs, linked from the hero, roadmap and footer. */}
       {/* The full grouped FAQ lives here now - the standalone /faq page was
           removed, and this is the only place the complete set is rendered. */}
       <FaqSection grouped />

@@ -201,9 +201,6 @@ export default function RoadmapSection() {
             <Button to="/assessment" size="lg" variant="primary">
               Start with an assessment
             </Button>
-            <Button to="/programs" size="lg" variant="outline">
-              See our programs
-            </Button>
           </div>
         </div>
       </div>

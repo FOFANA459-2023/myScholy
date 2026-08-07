@@ -14,7 +14,6 @@ import LandingPage from "./pages/LandingPage.jsx";
 const ScholarshipListPage = lazy(() => import("./pages/ScholarshipListPage.jsx"));
 const ScholarshipDetailPage = lazy(() => import("./pages/ScholarshipDetailPage.jsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
-const ProgramsPage = lazy(() => import("./pages/ProgramsPage.jsx"));
 const AssessmentPage = lazy(() => import("./pages/AssessmentPage.jsx"));
 const ConsultingPage = lazy(() => import("./pages/ConsultingPage.jsx"));
 const AcademyPage = lazy(() => import("./pages/AcademyPage.jsx"));
@@ -43,7 +42,8 @@ export default function App() {
           {/* Public */}
           <Route path="scholarships" element={<ScholarshipListPage />} />
           <Route path="scholarships/:id" element={<ScholarshipDetailPage />} />
-          <Route path="programs" element={<ProgramsPage />} />
+          {/* The programs page was retired; the assessment covers its job. */}
+          <Route path="programs" element={<Navigate to="/assessment" replace />} />
           <Route path="assessment" element={<AssessmentPage />} />
           <Route path="consulting" element={<ConsultingPage />} />
           <Route path="academy" element={<AcademyPage />} />

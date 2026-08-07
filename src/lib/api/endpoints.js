@@ -160,6 +160,14 @@ export const assistant = {
       { auth: false, timeout: 35_000 },
     ),
 
+  /** Public: personalized fit-assessment result from the quiz answers. */
+  assessment: (answers) =>
+    api.post(
+      "/assistant/assessment/",
+      { answers },
+      { auth: false, timeout: 45_000 },
+    ),
+
   /** Admin-only: extract posting-form fields from pasted announcement text. */
   extractScholarship: (text) =>
     api.post(
