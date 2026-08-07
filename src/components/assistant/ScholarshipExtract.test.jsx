@@ -100,6 +100,24 @@ describe("ScholarshipExtract", () => {
     expect(onExtract).toHaveBeenCalledWith({ name: "From PDF" });
   });
 
+  it("warns when the scholarship likely already exists", async () => {
+    assistant.extractScholarship.mockResolvedValue({
+      fields: { name: "Example Fellowship 2027" },
+      duplicate: { name: "Example Fellowship 2026", status: "archived" },
+    });
+
+    render(<ScholarshipExtract onExtract={() => {}} />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/announcement text/i), SAMPLE);
+    await user.click(screen.getByRole("button", { name: /extract details/i }));
+
+    expect(await screen.findByText(/possible duplicate/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/likely already exists in the archive/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"Example Fellowship 2026"/i)).toBeInTheDocument();
+  });
+
   it("surfaces extraction errors", async () => {
     assistant.extractScholarship.mockRejectedValue(
       new Error("The text could not be analysed."),

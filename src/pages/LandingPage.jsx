@@ -66,21 +66,37 @@ export default function LandingPage() {
         <div className="container grid items-center gap-10 md:grid-cols-2 md:gap-14">
           <div>
             <h2 className="text-3xl font-bold text-brand-900 sm:text-4xl">
-              About MyScholy
+              About myScholy
             </h2>
             <div className="mt-6 border-l-4 border-brand-500 pl-5 text-base leading-relaxed text-ink-700">
               <p>
-                Too many students across Africa lose money - and time they do not have -
-                to fake scholarship links and people promising help they never deliver.
-                Telling a real opportunity from a scam is hard when nobody has shown you
-                what the real ones look like.
+                myScholy is an education platform that helps students discover
+                scholarships and other educational opportunities from trusted
+                sources. We know that finding the right opportunity can be
+                overwhelming, so our goal is to make the process simpler and
+                more reliable. Every scholarship listed on our platform is
+                reviewed before publication and includes a link to the official
+                application page. The scholarship board is completely free to
+                use, allowing students to search, filter, and explore
+                opportunities without creating an account or paying any fees.
               </p>
               <p className="mt-4">
-                myScholy is an education hub built to fix that. Every scholarship and
-                opportunity on the board is checked before it is listed, and browsing is
-                free - no account, no fees. Our consulting service and the Academy are
-                being built next; both are described in full on the site, and neither
-                is taking bookings yet.
+                We&apos;re also expanding myScholy beyond the scholarship
+                board. myScholy Consulting, coming soon, will offer
+                personalized guidance for students who want extra support with
+                their applications at an affordable price. From application
+                planning and essay editing to CV reviews and interview
+                preparation, our goal is to make quality guidance accessible
+                to every student.
+              </p>
+              <p className="mt-4">
+                myScholy Academy, also coming soon, will provide practical
+                courses and learning resources for students who want to
+                develop valuable skills beyond the classroom. Whether
+                you&apos;re getting started with coding, entrepreneurship,
+                writing, career development, or other in-demand skills, the
+                Academy will help you learn, grow, and prepare for future
+                opportunities.
               </p>
             </div>
             <div className="mt-8">

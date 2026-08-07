@@ -28,6 +28,7 @@ export default function ScholarshipExtract({ onExtract }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
+  const [duplicate, setDuplicate] = useState(null);
   const fileRef = useRef(null);
 
   const ready =
@@ -41,6 +42,7 @@ export default function ScholarshipExtract({ onExtract }) {
     if (busy || !ready) return;
     setError(null);
     setDone(false);
+    setDuplicate(null);
     setBusy(true);
     try {
       const data =
@@ -53,6 +55,7 @@ export default function ScholarshipExtract({ onExtract }) {
         Object.entries(data.fields || {}).filter(([, value]) => value),
       );
       onExtract(fields);
+      setDuplicate(data.duplicate || null);
       setDone(true);
     } catch (requestError) {
       setError(requestError?.message || "Extraction failed. Please try again.");
@@ -65,6 +68,7 @@ export default function ScholarshipExtract({ onExtract }) {
     setMode(next);
     setError(null);
     setDone(false);
+    setDuplicate(null);
   };
 
   return (
@@ -103,6 +107,16 @@ export default function ScholarshipExtract({ onExtract }) {
       {error && (
         <Alert tone="error" className="mb-3">
           {error}
+        </Alert>
+      )}
+      {done && !error && duplicate && (
+        <Alert tone="warning" className="mb-3" title="Possible duplicate">
+          This scholarship likely already exists in the{" "}
+          {duplicate.status === "archived" ? "archive" : "live board"} as
+          &quot;{duplicate.name}&quot;.{" "}
+          {duplicate.status === "archived"
+            ? "If it is the same one, repost it from the admin archive instead of creating a copy."
+            : "Check the board before posting a copy."}
         </Alert>
       )}
       {done && !error && (

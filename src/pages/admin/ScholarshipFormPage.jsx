@@ -17,7 +17,6 @@ import {
   scholarships as scholarshipsApi,
 } from "../../lib/api/endpoints.js";
 import { useApi, useMutation } from "../../lib/hooks.js";
-import { displayName, useSession } from "../../lib/auth.js";
 import { toDateInputValue, todayInputValue } from "../../lib/format.js";
 import * as v from "../../lib/validation.js";
 
@@ -69,7 +68,6 @@ const LABELS = {
 export default function ScholarshipFormPage({ mode = "create" }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useSession();
   const isEdit = mode === "edit";
 
   const [values, setValues] = useState(EMPTY);
@@ -120,9 +118,10 @@ export default function ScholarshipFormPage({ mode = "create" }) {
         deadline: toDateInputValue(existing.data.deadline),
       });
     } else if (!isEdit) {
-      setValues((current) => ({ ...current, author: current.author || displayName(user) }));
+      // Listings are published under the site's name, not the admin's.
+      setValues((current) => ({ ...current, author: current.author || "myScholy" }));
     }
-  }, [isEdit, existing.data, user]);
+  }, [isEdit, existing.data]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
