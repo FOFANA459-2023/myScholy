@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import { deadlineStatus, formatRelativeDays, formatShortDate } from "../../lib/format.js";
 import { Badge, Card } from "../../components/ui/index.js";
+import CountryFlag from "../../components/ui/CountryFlag.jsx";
 
 const DEADLINE_TONE = {
   closed: { tone: "neutral", label: "Closed" },
@@ -11,11 +12,14 @@ const DEADLINE_TONE = {
   open: { tone: "success", label: "Open" },
 };
 
-function Meta({ label, value }) {
+function Meta({ label, value, prefix }) {
   return (
     <div className="min-w-0">
       <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</dt>
-      <dd className="truncate text-sm text-ink-700">{value || "-"}</dd>
+      <dd className="flex items-center gap-1.5 text-sm text-ink-700">
+        {prefix}
+        <span className="truncate">{value || "-"}</span>
+      </dd>
     </div>
   );
 }
@@ -54,7 +58,16 @@ const ScholarshipCard = React.memo(function ScholarshipCard({ scholarship }) {
         </h3>
 
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
-          <Meta label="Country" value={scholarship.host_country} />
+          <Meta
+            label="Country"
+            value={scholarship.host_country}
+            prefix={
+              <CountryFlag
+                country={scholarship.host_country}
+                className="shrink-0"
+              />
+            }
+          />
           <Meta label="Level" value={scholarship.degree_level} />
           <Meta label="Deadline" value={formatShortDate(scholarship.deadline)} />
           <Meta label="Posted by" value={scholarship.author} />
