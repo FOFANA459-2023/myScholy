@@ -314,7 +314,7 @@ export default function EligibilityCheck() {
               <div className="py-10 text-center" aria-live="polite">
                 <LoadingDots />
                 <p className="mt-4 text-sm font-medium text-ink-600">
-                  Building your personalized plan…
+                  Building your personalized assessment result…
                 </p>
                 <p className="mt-1 text-xs text-ink-400">
                   Matching your answers with live scholarships on the board.
@@ -323,7 +323,7 @@ export default function EligibilityCheck() {
             ) : aiResult ? (
               <div aria-live="polite">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
-                  Personalized plan
+                  Personalized assessment result
                 </span>
 
                 <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
