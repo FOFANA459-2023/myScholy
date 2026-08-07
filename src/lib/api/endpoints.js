@@ -158,4 +158,12 @@ export const assistant = {
       { message, history },
       { auth: false, timeout: 35_000 },
     ),
+
+  /** Admin-only: extract posting-form fields from pasted announcement text. */
+  extractScholarship: (text) =>
+    api.post(
+      "/admin/assistant/extract-scholarship/",
+      { text },
+      { timeout: 35_000 },
+    ),
 };

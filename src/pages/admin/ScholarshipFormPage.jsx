@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
+import ScholarshipExtract from "../../components/assistant/ScholarshipExtract.jsx";
 import { Page, PageHeader } from "../../components/layout/SiteLayout.jsx";
 import {
   Alert,
@@ -11,7 +12,10 @@ import {
   TextAreaField,
   TextField,
 } from "../../components/ui/index.js";
-import { scholarships as scholarshipsApi } from "../../lib/api/endpoints.js";
+import {
+  assistant as assistantApi,
+  scholarships as scholarshipsApi,
+} from "../../lib/api/endpoints.js";
 import { useApi, useMutation } from "../../lib/hooks.js";
 import { displayName, useSession } from "../../lib/auth.js";
 import { toDateInputValue, todayInputValue } from "../../lib/format.js";
@@ -70,6 +74,32 @@ export default function ScholarshipFormPage({ mode = "create" }) {
 
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
+  const [aiEnabled, setAiEnabled] = useState(false);
+
+  // The paste-and-auto-fill panel appears only on create, and only when the
+  // backend has an AI key configured (same gate as the public widget).
+  useEffect(() => {
+    if (isEdit) return undefined;
+    let cancelled = false;
+    assistantApi
+      .status()
+      .then((data) => {
+        if (!cancelled && data?.enabled) setAiEnabled(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit]);
+
+  const applyExtracted = (fields) => {
+    setValues((current) => ({ ...current, ...fields }));
+    setErrors((current) => {
+      const next = { ...current };
+      Object.keys(fields).forEach((field) => delete next[field]);
+      return next;
+    });
+  };
 
   const existing = useApi(
     ({ signal }) => scholarshipsApi.adminDetail(id, { signal }),
@@ -197,6 +227,12 @@ export default function ScholarshipFormPage({ mode = "create" }) {
             : "Add a new opportunity to the board. Put each benefit or requirement on its own line."
         }
       />
+
+      {!isEdit && aiEnabled && (
+        <div className="mb-6">
+          <ScholarshipExtract onExtract={applyExtracted} />
+        </div>
+      )}
 
       <Card>
         <CardBody>
