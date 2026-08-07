@@ -153,11 +153,14 @@ export const assistant = {
       ...options,
     }),
 
+  // Chat and the assessment send the JWT when the visitor is logged in
+  // (auth: true attaches it only if present): signed-in users get a higher
+  // daily quota on the server.
   chat: (message, history) =>
     api.post(
       "/assistant/chat/",
       { message, history },
-      { auth: false, timeout: 35_000 },
+      { timeout: 35_000 },
     ),
 
   /** Public: personalized fit-assessment result from the quiz answers. */
@@ -165,7 +168,7 @@ export const assistant = {
     api.post(
       "/assistant/assessment/",
       { answers },
-      { auth: false, timeout: 45_000 },
+      { timeout: 45_000 },
     ),
 
   /** Admin-only: extract posting-form fields from pasted announcement text. */

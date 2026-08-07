@@ -72,31 +72,23 @@ export default function LandingPage() {
               <p>
                 myScholy is an education platform that helps students discover
                 scholarships and other educational opportunities from trusted
-                sources. We know that finding the right opportunity can be
-                overwhelming, so our goal is to make the process simpler and
-                more reliable. Every scholarship listed on our platform is
-                reviewed before publication and includes a link to the official
-                application page. The scholarship board is completely free to
-                use, allowing students to search, filter, and explore
-                opportunities without creating an account or paying any fees.
+                sources. Every opportunity listed on our platform is reviewed
+                before publication and includes a link to the official
+                application page. Our scholarship board is completely free to
+                use, allowing students to search and explore opportunities
+                without creating an account or paying any fees.
               </p>
               <p className="mt-4">
-                We&apos;re also expanding myScholy beyond the scholarship
-                board. myScholy Consulting, coming soon, will offer
-                personalized guidance for students who want extra support with
-                their applications at an affordable price. From application
-                planning and essay editing to CV reviews and interview
-                preparation, our goal is to make quality guidance accessible
-                to every student.
+                myScholy Consulting, coming soon, will offer personalized and
+                affordable support for students throughout the application
+                process, including application planning, essay editing, CV
+                reviews, and interview preparation.
               </p>
               <p className="mt-4">
                 myScholy Academy, also coming soon, will provide practical
-                courses and learning resources for students who want to
-                develop valuable skills beyond the classroom. Whether
-                you&apos;re getting started with coding, entrepreneurship,
-                writing, career development, or other in-demand skills, the
-                Academy will help you learn, grow, and prepare for future
-                opportunities.
+                courses and learning resources for students who want to build
+                skills in coding, entrepreneurship, writing, career
+                development, and more.
               </p>
             </div>
             <div className="mt-8">

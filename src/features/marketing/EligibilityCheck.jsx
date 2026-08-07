@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 
-import { Button, LoadingDots } from "../../components/ui/index.js";
+import { Alert, Button, LoadingDots } from "../../components/ui/index.js";
 import { assistant as assistantApi } from "../../lib/api/endpoints.js";
 
 /**
@@ -163,6 +163,9 @@ export default function EligibilityCheck() {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  // Friendly quota message from the server (429) - shown above the fallback
+  // result so the visitor knows when the personalized plan comes back.
+  const [aiNotice, setAiNotice] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -186,10 +189,14 @@ export default function EligibilityCheck() {
 
   const runAi = (finalAnswers) => {
     setAiLoading(true);
+    setAiNotice(null);
     assistantApi
       .assessment(finalAnswers)
       .then((data) => setAiResult(data))
-      .catch(() => setAiResult(null))
+      .catch((error) => {
+        setAiResult(null);
+        if (error?.status === 429 && error.message) setAiNotice(error.message);
+      })
       .finally(() => setAiLoading(false));
   };
 
@@ -212,6 +219,7 @@ export default function EligibilityCheck() {
     setSubmitted(false);
     setAiResult(null);
     setAiLoading(false);
+    setAiNotice(null);
   };
 
   const progress = submitted ? 100 : Math.round((step / total) * 100);
@@ -375,6 +383,11 @@ export default function EligibilityCheck() {
               </div>
             ) : (
               <div aria-live="polite">
+                {aiNotice && (
+                  <Alert tone="info" className="mb-5" title="Personalized plan paused">
+                    {aiNotice} Here is your standard result in the meantime.
+                  </Alert>
+                )}
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                     result.eligible
