@@ -137,3 +137,25 @@ export const admin = {
 export const contact = {
   send: (payload) => api.post("/contact/", payload, { auth: false }),
 };
+
+/**
+ * Popup site assistant. `status` decides whether the widget renders at all
+ * (the backend reports disabled when no Gemini key is configured - notably in
+ * the e2e stack); `chat` is one conversation turn. Chat responses are never
+ * cached - each answer is specific to the question.
+ */
+export const assistant = {
+  status: (options) =>
+    api.get("/assistant/", {
+      auth: false,
+      cache: { ttl: 5 * 60_000, tags: ["assistant"] },
+      ...options,
+    }),
+
+  chat: (message, history) =>
+    api.post(
+      "/assistant/chat/",
+      { message, history },
+      { auth: false, timeout: 35_000 },
+    ),
+};

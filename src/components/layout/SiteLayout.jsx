@@ -2,6 +2,7 @@ import React, { Suspense, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 
 import cn from "../../lib/cn.js";
+import AssistantWidget from "../assistant/AssistantWidget.jsx";
 import { PageLoader } from "../ui/index.js";
 import Footer from "./Footer.jsx";
 import Navbar from "./Navbar.jsx";
@@ -93,6 +94,7 @@ export default function SiteLayout() {
         </Suspense>
       </main>
       <Footer />
+      <AssistantWidget />
     </div>
   );
 }
