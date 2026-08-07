@@ -73,6 +73,9 @@ export default function ScholarshipFormPage({ mode = "create" }) {
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [aiEnabled, setAiEnabled] = useState(false);
+  // Set when the server answers a create with 409: {name, status}. Posting
+  // again with confirm_duplicate acknowledges the warning.
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
   // The paste-and-auto-fill panel appears only on create, and only when the
   // backend has an AI key configured (same gate as the public widget).
@@ -175,8 +178,7 @@ export default function ScholarshipFormPage({ mode = "create" }) {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const submit = async ({ confirmDuplicate = false } = {}) => {
     if (!validate()) {
       document.querySelector("[aria-invalid='true']")?.focus();
       return;
@@ -189,6 +191,7 @@ export default function ScholarshipFormPage({ mode = "create" }) {
       degree_level: values.degree_level.trim(),
       link: values.link.trim(),
       author: values.author.trim(),
+      ...(confirmDuplicate ? { confirm_duplicate: true } : {}),
     });
 
     if (result.ok) {
@@ -196,9 +199,17 @@ export default function ScholarshipFormPage({ mode = "create" }) {
         replace: true,
         state: { flash: isEdit ? "Scholarship updated." : "Scholarship posted." },
       });
+    } else if (result.error?.status === 409 && result.error.data?.duplicate) {
+      setDuplicateWarning(result.error.data.duplicate);
     } else if (result.error?.fieldErrors) {
       setErrors(result.error.fieldErrors);
     }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setDuplicateWarning(null);
+    await submit();
   };
 
   if (isEdit && existing.isLoading) return <PageLoader label="Loading scholarship" />;
@@ -236,8 +247,42 @@ export default function ScholarshipFormPage({ mode = "create" }) {
       <Card>
         <CardBody>
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            {save.error && !save.error.fieldErrors && (
+            {save.error && !save.error.fieldErrors && !duplicateWarning && (
               <Alert tone="error">{save.error.message}</Alert>
+            )}
+
+            {duplicateWarning && (
+              <Alert tone="warning" title="Possible duplicate">
+                <p>
+                  This scholarship likely already exists in the{" "}
+                  {duplicateWarning.status === "archived"
+                    ? "archive"
+                    : "live board"}{" "}
+                  as &quot;{duplicateWarning.name}&quot;.
+                  {duplicateWarning.status === "archived" &&
+                    " If it is the same one, repost it from the admin archive instead."}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {duplicateWarning.status === "archived" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      to="/admin/scholarships/archive"
+                    >
+                      Open the archive
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="subtle"
+                    loading={save.isPending}
+                    onClick={() => submit({ confirmDuplicate: true })}
+                  >
+                    Post anyway
+                  </Button>
+                </div>
+              </Alert>
             )}
 
             <TextField
