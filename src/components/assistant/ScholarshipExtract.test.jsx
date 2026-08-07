@@ -9,6 +9,8 @@ import { assistant } from "../../lib/api/endpoints.js";
 vi.mock("../../lib/api/endpoints.js", () => ({
   assistant: {
     extractScholarship: vi.fn(),
+    extractScholarshipUrl: vi.fn(),
+    extractScholarshipPdf: vi.fn(),
   },
 }));
 
@@ -56,6 +58,46 @@ describe("ScholarshipExtract", () => {
       deadline: "2027-03-01",
       host_country: "Germany",
     });
+  });
+
+  it("extracts from a URL in link mode", async () => {
+    assistant.extractScholarshipUrl.mockResolvedValue({
+      fields: { name: "From URL" },
+    });
+    const onExtract = vi.fn();
+
+    render(<ScholarshipExtract onExtract={onExtract} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: /web link/i }));
+    await user.type(
+      screen.getByLabelText(/scholarship page link/i),
+      "https://example.org/award",
+    );
+    await user.click(screen.getByRole("button", { name: /extract details/i }));
+
+    expect(await screen.findByText(/details extracted/i)).toBeInTheDocument();
+    expect(assistant.extractScholarshipUrl).toHaveBeenCalledWith(
+      "https://example.org/award",
+    );
+    expect(onExtract).toHaveBeenCalledWith({ name: "From URL" });
+  });
+
+  it("extracts from a file in PDF mode", async () => {
+    assistant.extractScholarshipPdf.mockResolvedValue({
+      fields: { name: "From PDF" },
+    });
+    const onExtract = vi.fn();
+
+    render(<ScholarshipExtract onExtract={onExtract} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: /pdf file/i }));
+    const pdf = new File(["%PDF-1.4"], "award.pdf", { type: "application/pdf" });
+    await user.upload(screen.getByLabelText(/announcement pdf/i), pdf);
+    await user.click(screen.getByRole("button", { name: /extract details/i }));
+
+    expect(await screen.findByText(/details extracted/i)).toBeInTheDocument();
+    expect(assistant.extractScholarshipPdf).toHaveBeenCalledWith(pdf);
+    expect(onExtract).toHaveBeenCalledWith({ name: "From PDF" });
   });
 
   it("surfaces extraction errors", async () => {

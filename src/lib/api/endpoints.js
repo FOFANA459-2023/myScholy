@@ -6,7 +6,8 @@
  * declares which cached tags it invalidates.
  */
 
-import { api, download } from "./client.js";
+import { api, API_BASE_URL, ApiError, download } from "./client.js";
+import { getAccessToken } from "../auth.js";
 
 export const TAGS = {
   scholarships: "scholarships",
@@ -166,4 +167,45 @@ export const assistant = {
       { text },
       { timeout: 35_000 },
     ),
+
+  /** Admin-only: extract from a scholarship page URL (fetched server-side). */
+  extractScholarshipUrl: (url) =>
+    api.post(
+      "/admin/assistant/extract-scholarship/",
+      { url },
+      { timeout: 45_000 },
+    ),
+
+  /**
+   * Admin-only: extract from an uploaded PDF. Multipart, so it bypasses the
+   * JSON client; Gemini reads the document natively (scans included).
+   */
+  extractScholarshipPdf: async (file) => {
+    const form = new FormData();
+    form.append("pdf", file);
+    let response;
+    try {
+      response = await fetch(
+        `${API_BASE_URL}/admin/assistant/extract-scholarship/`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${getAccessToken()}` },
+          body: form,
+        },
+      );
+    } catch {
+      throw new ApiError(
+        "We couldn't reach the server. Check your connection and try again.",
+        { status: 0 },
+      );
+    }
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new ApiError(data?.error || `Request failed (${response.status})`, {
+        status: response.status,
+        data,
+      });
+    }
+    return data;
+  },
 };
