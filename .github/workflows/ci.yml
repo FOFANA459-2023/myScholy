@@ -69,7 +69,7 @@ jobs:
       - name: Build with the production API base
         run: npm run build
         env:
-          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || 'https://myscholyscholarship-backend.onrender.com/api' }}
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || 'https://myscholy.duckdns.org/api' }}
       - name: Upload production bundle
         uses: actions/upload-artifact@v4
         with:
