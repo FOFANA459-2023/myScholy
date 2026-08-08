@@ -52,7 +52,7 @@ const LABELS = {
   host_country: "Host country",
   benefits: "Benefits",
   eligibility: "Eligibility",
-  degree_level: "Degree level",
+  degree_level: "Degree level/program type",
   link: "Application link",
   author: "Posted by",
 };
@@ -340,7 +340,7 @@ export default function ScholarshipFormPage({ mode = "create" }) {
               onBlur={handleBlur}
               error={errors.degree_level}
               placeholder="e.g. Masters"
-              hint="Keep wording consistent - this powers the degree level filter."
+              hint="Degree or program type, e.g. Bachelors, Masters, PhD, Diploma - this powers the degree level filter."
               required
             />
 

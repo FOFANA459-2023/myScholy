@@ -87,7 +87,7 @@ export default function Footer() {
 
       <div className="border-t border-white/20">
         <div className="container py-6 text-center text-sm text-white/80">
-          &copy; {new Date().getFullYear()} MyScholy. All rights reserved.
+          &copy; {new Date().getFullYear()} myScholy. All rights reserved.
         </div>
       </div>
     </footer>

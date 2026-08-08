@@ -9,7 +9,7 @@ const AUTO_OPEN_DELAY_MS = 5000;
 
 const GREETING = {
   role: "model",
-  text: "Hello! I am the MyScholy assistant. Ask me anything about scholarships on the site — by country, degree level or deadline — or about how MyScholy works.",
+  text: "Hello! I am the myScholy assistant. Ask me anything about scholarships on the site — by country, degree level or deadline — or about how myScholy works.",
 };
 
 /**
@@ -116,12 +116,12 @@ export default function AssistantWidget() {
       {open && (
         <div
           role="dialog"
-          aria-label="MyScholy assistant"
+          aria-label="myScholy assistant"
           className="flex w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card-hover"
         >
           <div className="flex items-center justify-between gap-3 border-b-2 border-gold-500 bg-brand-900 px-4 py-3">
             <div>
-              <p className="text-sm font-semibold text-white">MyScholy Assistant</p>
+              <p className="text-sm font-semibold text-white">myScholy Assistant</p>
               <p className="text-xs text-brand-100">
                 Ask about scholarships or the site
               </p>
@@ -192,7 +192,7 @@ export default function AssistantWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        aria-label={open ? "Minimise assistant" : "Open MyScholy assistant"}
+        aria-label={open ? "Minimise assistant" : "Open myScholy assistant"}
         className="rounded-full border-2 border-gold-500 bg-brand-900 p-3.5 text-white shadow-card transition-transform hover:scale-105"
       >
         {open ? (

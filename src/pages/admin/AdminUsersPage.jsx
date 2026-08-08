@@ -31,7 +31,6 @@ const EMPTY_USER = {
   last_name: "",
   email: "",
   password: "",
-  is_super_admin: false,
 };
 
 /**
@@ -118,7 +117,6 @@ export default function AdminUsersPage() {
         last_name: form.last_name.trim(),
         password: form.password,
       },
-      is_super_admin: form.is_super_admin,
     });
 
     if (result.ok) {
@@ -256,26 +254,8 @@ export default function AdminUsersPage() {
                 required
               />
 
-              {/* Only super admins may mint super admins - the API enforces
-                  it, so the option is hidden rather than shown-and-rejected. */}
-              {isSuperAdmin && (
-                <label className="flex items-start gap-2.5 rounded-lg border border-gold-200 bg-gold-50 px-4 py-3 text-sm">
-                  <input
-                    type="checkbox"
-                    name="is_super_admin"
-                    checked={form.is_super_admin}
-                    onChange={handleChange}
-                    className="mt-0.5 h-4 w-4 rounded border-gold-300 text-gold-600 focus:ring-gold-500"
-                  />
-                  <span className="text-gold-900">
-                    Make them a super admin
-                    <span className="mt-0.5 block text-xs text-gold-700">
-                      Super admins can add and remove other administrators.
-                    </span>
-                  </span>
-                </label>
-              )}
-
+              {/* Super-admin status is never granted from the app; it is only
+                  enabled manually in the database. */}
               <Button type="submit" fullWidth loading={create.isPending}>
                 {create.isPending ? "Adding..." : "Add administrator"}
               </Button>

@@ -60,7 +60,7 @@ const ScholarshipFilters = React.memo(function ScholarshipFilters({
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div>
           <label htmlFor="filter-country" className="sr-only">
-            Host country
+            Study region
           </label>
           <select
             id="filter-country"
@@ -68,7 +68,7 @@ const ScholarshipFilters = React.memo(function ScholarshipFilters({
             onChange={set("country")}
             className={selectClass}
           >
-            <option value="">All countries</option>
+            <option value="">All regions</option>
             {facets.countries.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.value} ({item.count})

@@ -20,7 +20,7 @@ export default function WhatsAppInvitePage() {
           </span>
 
           <h1 className="mt-6 text-3xl font-bold text-ink-900">
-            Join the MyScholy community
+            Join the myScholy community
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-ink-600">
             Real-time scholarship alerts, application tips and a group of students going

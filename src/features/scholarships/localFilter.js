@@ -44,6 +44,153 @@ function hasTerm(raw, wanted) {
   return splitTerms(raw).some((term) => term.toLowerCase() === target);
 }
 
+// ---------------------------------------------------------------------------
+// Canonical filter categories - ports of classify_degree / classify_region in
+// scholarships/filters.py. The dropdowns offer these fixed options; free-text
+// row values are classified into them. Keep both sides in sync.
+// ---------------------------------------------------------------------------
+
+const DEGREE_LEVELS = new Set(["undergraduate", "graduate", "postgraduate", "non-degree"]);
+
+const ALL_LEVEL_TERMS = new Set(["any", "any level", "all", "all levels", "all degree levels"]);
+
+function classifyDegree(term) {
+  const text = term.toLowerCase();
+  if (ALL_LEVEL_TERMS.has(text)) {
+    return new Set(["undergraduate", "graduate", "postgraduate"]);
+  }
+  const categories = new Set();
+  if (text.includes("undergraduate") || text.includes("undergrad") || text.includes("bachelor")) {
+    categories.add("undergraduate");
+  }
+  if (
+    text.includes("postgraduate") ||
+    text.includes("post-graduate") ||
+    text.includes("postdoc") ||
+    text.includes("post-doc") ||
+    text.includes("phd") ||
+    text.includes("ph.d") ||
+    text.includes("doctor") ||
+    text.includes("dphil")
+  ) {
+    categories.add("postgraduate");
+  }
+  if (
+    text.includes("master") ||
+    text.includes("msc") ||
+    text.includes("m.sc") ||
+    text.includes("mba") ||
+    text.includes("mphil") ||
+    (text.includes("graduate") &&
+      !text.includes("undergraduate") &&
+      !text.includes("postgraduate") &&
+      !text.includes("post-graduate"))
+  ) {
+    categories.add("graduate");
+  }
+  return categories.size ? categories : new Set(["non-degree"]);
+}
+
+const REGIONS = new Set(["africa", "europe", "australia", "asia", "united states", "canada"]);
+
+const REGION_COUNTRIES = {
+  africa: [
+    "algeria", "angola", "benin", "botswana", "burkina faso", "burundi",
+    "cabo verde", "cape verde", "cameroon", "central african republic",
+    "chad", "comoros", "congo", "democratic republic of the congo",
+    "dr congo", "djibouti", "egypt", "equatorial guinea", "eritrea",
+    "eswatini", "swaziland", "ethiopia", "gabon", "gambia", "the gambia",
+    "ghana", "guinea", "guinea-bissau", "ivory coast", "cote d'ivoire",
+    "côte d'ivoire", "kenya", "lesotho", "liberia", "libya", "madagascar",
+    "malawi", "mali", "mauritania", "mauritius", "morocco", "mozambique",
+    "namibia", "niger", "nigeria", "rwanda", "sao tome and principe",
+    "senegal", "seychelles", "sierra leone", "somalia", "south africa",
+    "south sudan", "sudan", "tanzania", "togo", "tunisia", "uganda",
+    "zambia", "zimbabwe",
+  ],
+  europe: [
+    "albania", "andorra", "austria", "belarus", "belgium",
+    "bosnia and herzegovina", "bulgaria", "croatia", "cyprus",
+    "czech republic", "czechia", "denmark", "estonia", "finland", "france",
+    "germany", "greece", "hungary", "iceland", "ireland", "italy", "kosovo",
+    "latvia", "liechtenstein", "lithuania", "luxembourg", "malta", "moldova",
+    "monaco", "montenegro", "netherlands", "the netherlands",
+    "north macedonia", "norway", "poland", "portugal", "romania", "russia",
+    "san marino", "serbia", "slovakia", "slovenia", "spain", "sweden",
+    "switzerland", "ukraine", "united kingdom", "uk", "great britain",
+    "england", "scotland", "wales", "northern ireland",
+  ],
+  australia: [
+    "australia", "new zealand", "fiji", "papua new guinea", "samoa",
+    "solomon islands", "tonga", "vanuatu",
+  ],
+  asia: [
+    "afghanistan", "armenia", "azerbaijan", "bahrain", "bangladesh",
+    "bhutan", "brunei", "cambodia", "china", "georgia", "hong kong",
+    "india", "indonesia", "iran", "iraq", "israel", "japan", "jordan",
+    "kazakhstan", "kuwait", "kyrgyzstan", "laos", "lebanon", "macau",
+    "malaysia", "maldives", "mongolia", "myanmar", "nepal", "north korea",
+    "oman", "pakistan", "palestine", "philippines", "qatar", "saudi arabia",
+    "singapore", "south korea", "korea", "sri lanka", "syria", "taiwan",
+    "tajikistan", "thailand", "timor-leste", "turkey", "türkiye", "turkiye",
+    "turkmenistan", "united arab emirates", "uae", "uzbekistan", "vietnam",
+    "yemen",
+  ],
+  "united states": [
+    "united states", "united states of america", "usa", "us", "u.s.",
+    "u.s.a.", "america",
+  ],
+  canada: ["canada"],
+};
+
+const COUNTRY_TO_REGION = new Map();
+for (const [region, countries] of Object.entries(REGION_COUNTRIES)) {
+  for (const country of countries) COUNTRY_TO_REGION.set(country, region);
+}
+
+const GLOBAL_TERMS = new Set([
+  "worldwide", "global", "international", "any", "any country", "various",
+  "various countries", "all countries", "multiple countries", "anywhere",
+  "online", "remote",
+]);
+
+const REGION_KEYWORDS = [
+  ["africa", "africa"],
+  ["europe", "europe"],
+  ["asia", "asia"],
+  ["australia", "australia"],
+  ["australia", "oceania"],
+  ["united states", "united states"],
+  ["canada", "canada"],
+];
+
+function classifyRegion(term) {
+  const text = term.toLowerCase().replace(/^[\s.]+|[\s.]+$/g, "");
+  if (GLOBAL_TERMS.has(text)) return new Set(REGIONS);
+
+  const region = COUNTRY_TO_REGION.get(text);
+  if (region) return new Set([region]);
+
+  const found = new Set();
+  for (const [name, keyword] of REGION_KEYWORDS) {
+    if (text.includes(keyword)) found.add(name);
+  }
+  return found;
+}
+
+/**
+ * One dropdown value against one stored field. Canonical categories resolve
+ * through the classifier; anything else (old bookmarked URLs) falls back to
+ * exact term matching, exactly like `_rows_matching_filter` on the backend.
+ */
+function matchesFilter(raw, wanted, canonical, classifier) {
+  const target = wanted.toLowerCase();
+  if (canonical.has(target)) {
+    return splitTerms(raw).some((term) => classifier(term).has(target));
+  }
+  return hasTerm(raw, wanted);
+}
+
 // ISO strings ("2026-08-04", "2026-08-04T10:00:00Z") compare correctly as text.
 const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -83,8 +230,16 @@ export function filterScholarships(rows, values, today = todayISO(), view = "liv
     );
   }
 
-  if (values.country) out = out.filter((row) => hasTerm(row.host_country, values.country));
-  if (values.degree) out = out.filter((row) => hasTerm(row.degree_level, values.degree));
+  if (values.country) {
+    out = out.filter((row) =>
+      matchesFilter(row.host_country, values.country, REGIONS, classifyRegion),
+    );
+  }
+  if (values.degree) {
+    out = out.filter((row) =>
+      matchesFilter(row.degree_level, values.degree, DEGREE_LEVELS, classifyDegree),
+    );
+  }
 
   return out.sort(ORDERINGS[values.ordering] || ORDERINGS.newest);
 }

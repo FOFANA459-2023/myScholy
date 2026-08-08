@@ -32,7 +32,7 @@ export default function LandingPage() {
 
         <div className="container py-20 text-center">
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-gold-300">
-            MyScholy
+            myScholy
           </p>
           <h1 className="mx-auto max-w-3xl text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
             Empowering students through scholarships

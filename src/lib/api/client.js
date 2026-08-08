@@ -1,5 +1,5 @@
 /**
- * HTTP client for the MyScholy API.
+ * HTTP client for the myScholy API.
  *
  * Responsibilities, all of which used to be duplicated (or missing) in every
  * component that called `fetch` or the Supabase SDK directly:

@@ -159,7 +159,7 @@ export default function Navbar() {
           <Link
             to="/"
             className="flex shrink-0 items-center gap-3 rounded-lg"
-            aria-label="MyScholy home"
+            aria-label="myScholy home"
           >
             <img
               src={Logo}
@@ -168,7 +168,7 @@ export default function Navbar() {
               height={48}
               className="h-12 w-12 rounded-xl object-cover"
             />
-            <span className="text-xl font-bold text-white">MyScholy</span>
+            <span className="text-xl font-bold text-white">myScholy</span>
           </Link>
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex">
