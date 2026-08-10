@@ -35,6 +35,33 @@
     <link rel="dns-prefetch" href="https://myscholy.duckdns.org" />
   </head>
   <body>
+    <!-- The app has never used a service worker or the Cache API, but older
+         deployments of this site may have registered one, and a leftover
+         worker serves a frozen copy of the whole app that survives refreshes
+         and every deploy (classic symptom: stale in normal Chrome, fine in
+         incognito). Unconditionally unregister and clear on every boot. -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then(function (regs) {
+            regs.forEach(function (reg) {
+              reg.unregister();
+            });
+          })
+          .catch(function () {});
+      }
+      if (window.caches && caches.keys) {
+        caches
+          .keys()
+          .then(function (keys) {
+            keys.forEach(function (key) {
+              caches.delete(key);
+            });
+          })
+          .catch(function () {});
+      }
+    </script>
     <div id="root"></div>
     <noscript>
       <p style="padding: 2rem; font-family: system-ui, sans-serif">
