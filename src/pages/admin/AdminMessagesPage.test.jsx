@@ -26,6 +26,7 @@ const INBOX = {
     {
       email: "ama@example.com",
       name: "Ama",
+      last_subject: "Question about DAAD",
       last_message: "Second question - this is the newest message from Ama.",
       last_at: "2026-08-10T10:00:00Z",
       total: 2,
@@ -54,6 +55,7 @@ describe("AdminMessagesPage", () => {
     renderPage();
     const link = await screen.findByRole("link", { name: "Ama" });
     expect(link).toHaveAttribute("href", "/admin/messages/ama%40example.com");
+    expect(screen.getByText("Question about DAAD")).toBeInTheDocument();
     expect(screen.getByText(/newest message from Ama/)).toBeInTheDocument();
     expect(screen.getByText("1 open")).toBeInTheDocument();
     expect(screen.getByText(/2 messages · 1 reply/)).toBeInTheDocument();

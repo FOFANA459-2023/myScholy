@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 
 import { Page, PageHeader } from "../../components/layout/SiteLayout.jsx";
@@ -48,8 +48,15 @@ function ThreadItem({ item }) {
           {" · "}
           {formatDate(item.created_at)}
         </p>
-        {isReply && item.subject ? (
-          <p className="mt-1 text-xs text-brand-600">{item.subject}</p>
+        {item.subject ? (
+          <p
+            className={cn(
+              "mt-1 text-xs font-medium",
+              isReply ? "text-brand-600" : "text-ink-600",
+            )}
+          >
+            {item.subject}
+          </p>
         ) : null}
         <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed">
           {item.body}
@@ -69,6 +76,22 @@ export default function AdminConversationPage() {
   const [subject, setSubject] = useState("Re: your message to myScholy");
   const [body, setBody] = useState("");
   const [justSent, setJustSent] = useState(false);
+  const subjectTouched = useRef(false);
+
+  // Pre-fill the reply subject from the student's own latest subject line so
+  // the reply threads with what they submitted - unless the admin already
+  // typed their own.
+  useEffect(() => {
+    if (subjectTouched.current) return;
+    const lastInbound = [...(thread.data?.items || [])]
+      .reverse()
+      .find((item) => item.direction === "in");
+    if (lastInbound?.subject) {
+      const s = lastInbound.subject;
+      setSubject(/^re:/i.test(s) ? s : `Re: ${s}`);
+    }
+  }, [thread.data]);
+
   const send = useMutation((payload) => adminApi.replyToConversation(email, payload));
   const toggle = useMutation(() =>
     adminApi.setConversationHandled(email, thread.data?.open_count > 0),
@@ -152,7 +175,10 @@ export default function AdminConversationPage() {
                 <TextField
                   label="Subject"
                   value={subject}
-                  onChange={(event) => setSubject(event.target.value)}
+                  onChange={(event) => {
+                    subjectTouched.current = true;
+                    setSubject(event.target.value);
+                  }}
                   required
                 />
                 <TextAreaField

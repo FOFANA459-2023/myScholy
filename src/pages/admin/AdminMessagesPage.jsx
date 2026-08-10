@@ -43,7 +43,14 @@ function ConversationRow({ conversation }) {
           <p className="text-xs text-ink-500">{formatDate(conversation.last_at)}</p>
         </div>
         <p className="mt-0.5 text-sm text-ink-500">{conversation.email}</p>
-        <p className="mt-2 line-clamp-2 whitespace-pre-line text-sm text-ink-700">
+        {conversation.last_subject && (
+          <p className="mt-2 text-sm font-medium text-ink-900">
+            {conversation.last_subject}
+          </p>
+        )}
+        <p
+          className={`${conversation.last_subject ? "mt-0.5" : "mt-2"} line-clamp-2 whitespace-pre-line text-sm text-ink-600`}
+        >
           {conversation.last_message}
         </p>
         <div className="mt-3 flex items-center gap-2">

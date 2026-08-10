@@ -40,6 +40,7 @@ const THREAD = {
       direction: "in",
       id: 2,
       name: "Ama",
+      subject: "Deadline extension?",
       body: "Thanks! One more question.",
       created_at: "2026-08-10T09:00:00Z",
       is_handled: false,
@@ -88,8 +89,9 @@ describe("AdminConversationPage", () => {
     );
     await user.click(screen.getByRole("button", { name: /send reply/i }));
 
+    // The reply subject is pre-filled from the student's latest subject line.
     expect(admin.replyToConversation).toHaveBeenCalledWith("ama@example.com", {
-      subject: "Re: your message to myScholy",
+      subject: "Re: Deadline extension?",
       body: "Ask away!",
     });
     expect(

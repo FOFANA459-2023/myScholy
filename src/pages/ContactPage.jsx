@@ -14,7 +14,7 @@ import { contact as contactApi } from "../lib/api/endpoints.js";
 import { useMutation } from "../lib/hooks.js";
 import * as v from "../lib/validation.js";
 
-const EMPTY = { name: "", email: "", message: "" };
+const EMPTY = { name: "", email: "", subject: "", message: "" };
 const MESSAGE_MAX = 5000;
 
 const CHANNELS = [
@@ -45,6 +45,12 @@ export default function ContactPage() {
         return v.name(current.name, "name");
       case "email":
         return v.email(current.email);
+      case "subject":
+        return v.minLength(
+          current.subject,
+          3,
+          "Give your message a short subject (at least 3 characters).",
+        );
       case "message":
         return (
           v.minLength(
@@ -73,6 +79,7 @@ export default function ContactPage() {
     const next = v.collect({
       name: validateField("name"),
       email: validateField("email"),
+      subject: validateField("subject"),
       message: validateField("message"),
     });
     setErrors(next);
@@ -175,6 +182,19 @@ export default function ContactPage() {
                   error={errors.email}
                   placeholder="you@example.com"
                   hint="We'll reply to this address."
+                  required
+                />
+
+                <TextField
+                  label="Subject"
+                  name="subject"
+                  maxLength={200}
+                  value={values.subject}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.subject}
+                  placeholder="What is your message about?"
+                  hint="Our reply will use this subject, so you can find it easily."
                   required
                 />
 
