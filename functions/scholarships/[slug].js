@@ -31,6 +31,18 @@ function setTag(html, pattern, replacement) {
   return pattern.test(html) ? html.replace(pattern, replacement) : html;
 }
 
+/**
+ * Platforms crop the preview image differently, so each crawler gets a card
+ * laid out for its shape: WhatsApp shows square thumbnails, LinkedIn draws
+ * its own title bar under a wide image, Facebook (and everyone else) gets
+ * the wide default.
+ */
+function cardVariant(userAgent) {
+  if (/whatsapp/i.test(userAgent)) return "square";
+  if (/linkedinbot/i.test(userAgent)) return "linkedin";
+  return "wide";
+}
+
 export async function onRequestGet({ request, params, env }) {
   const origin = new URL(request.url).origin;
   const asset = await env.ASSETS.fetch(new URL("/", origin));
@@ -77,11 +89,27 @@ export async function onRequestGet({ request, params, env }) {
         `$1${url}$2`,
       );
       // Each scholarship gets its own generated card (name + key facts on
-      // the brand background), rendered by the backend.
+      // the brand background), rendered by the backend in the layout that
+      // suits the crawler currently asking.
+      const variant = cardVariant(request.headers.get("user-agent") || "");
+      const sizes = { wide: [1200, 630], square: [1080, 1080], linkedin: [1200, 627] };
+      const [imgWidth, imgHeight] = sizes[variant];
       html = setTag(
         html,
         /(<meta[^>]*property="og:image"[^>]*content=")[^"]*(")/,
-        `$1${escapeHtml(`${API}/scholarships/${scholarship.slug}/card.png`)}$2`,
+        `$1${escapeHtml(
+          `${API}/scholarships/${scholarship.slug}/card.png?variant=${variant}`,
+        )}$2`,
+      );
+      html = setTag(
+        html,
+        /(<meta[^>]*property="og:image:width"[^>]*content=")[^"]*(")/,
+        `$1${imgWidth}$2`,
+      );
+      html = setTag(
+        html,
+        /(<meta[^>]*property="og:image:height"[^>]*content=")[^"]*(")/,
+        `$1${imgHeight}$2`,
       );
     }
   } catch {
@@ -91,9 +119,10 @@ export async function onRequestGet({ request, params, env }) {
   return new Response(html, {
     headers: {
       "content-type": "text/html; charset=utf-8",
-      // Edge-cache briefly so crawler bursts don't hammer the API; browsers
-      // always revalidate.
-      "cache-control": "public, max-age=0, s-maxage=300",
+      // No shared-cache lifetime: the response now varies by crawler
+      // user-agent (per-platform og:image), and an edge cache keyed only on
+      // the URL would hand WhatsApp a Facebook-shaped card.
+      "cache-control": "public, max-age=0, must-revalidate",
     },
   });
 }
