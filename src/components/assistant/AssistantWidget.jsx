@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { assistant } from "../../lib/api/endpoints.js";
 import { LoadingDots } from "../ui/index.js";
+import AssistantMarkdown from "./assistantMarkdown.jsx";
 
 const DISMISSED_KEY = "myscholy-assistant-dismissed";
 const AUTO_OPENED_KEY = "myscholy-assistant-auto-opened";
@@ -147,13 +148,17 @@ export default function AssistantWidget() {
                 key={index}
                 className={
                   message.role === "user"
-                    ? "ml-8 self-end rounded-2xl rounded-br-md bg-brand-600 px-3.5 py-2 text-sm text-white"
+                    ? "ml-8 self-end whitespace-pre-wrap rounded-2xl rounded-br-md bg-brand-600 px-3.5 py-2 text-sm text-white"
                     : message.error
                       ? "mr-8 self-start rounded-2xl rounded-bl-md border border-ink-200 bg-white px-3.5 py-2 text-sm italic text-ink-500"
-                      : "mr-8 self-start whitespace-pre-wrap rounded-2xl rounded-bl-md border border-ink-200 bg-white px-3.5 py-2 text-sm text-ink-700"
+                      : "mr-8 self-start rounded-2xl rounded-bl-md border border-ink-200 bg-white px-3.5 py-2 text-sm leading-relaxed text-ink-700"
                 }
               >
-                {message.text}
+                {message.role === "model" && !message.error ? (
+                  <AssistantMarkdown text={message.text} />
+                ) : (
+                  message.text
+                )}
               </div>
             ))}
             {sending && (
