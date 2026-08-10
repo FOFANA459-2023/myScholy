@@ -146,6 +146,24 @@ export const admin = {
   replyToContact: (id, payload) =>
     api.post(`/admin/contact/${id}/reply/`, payload),
 
+  /** Super admin only: inbox grouped by sender, newest activity first. */
+  conversations: (params, options) =>
+    api.get("/admin/conversations/", { params, ...options }),
+
+  /** Super admin only: one sender's full thread, oldest first. */
+  conversation: (email, options) =>
+    api.get(`/admin/conversations/${encodeURIComponent(email)}/`, options),
+
+  /** Super admin only: reply to a thread (marks every message handled). */
+  replyToConversation: (email, payload) =>
+    api.post(`/admin/conversations/${encodeURIComponent(email)}/reply/`, payload),
+
+  /** Super admin only: mark a whole thread handled/unhandled. */
+  setConversationHandled: (email, isHandled) =>
+    api.patch(`/admin/conversations/${encodeURIComponent(email)}/`, {
+      is_handled: isHandled,
+    }),
+
   /** Super admin only: sent-mail history. */
   sentMessages: (params, options) =>
     api.get("/admin/messages/", { params, ...options }),

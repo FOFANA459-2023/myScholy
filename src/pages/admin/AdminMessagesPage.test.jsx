@@ -9,9 +9,10 @@ import { admin } from "../../lib/api/endpoints.js";
 
 vi.mock("../../lib/api/endpoints.js", () => ({
   admin: {
-    contactMessages: vi.fn(),
-    setContactHandled: vi.fn(),
-    replyToContact: vi.fn(),
+    conversations: vi.fn(),
+    conversation: vi.fn(),
+    replyToConversation: vi.fn(),
+    setConversationHandled: vi.fn(),
     sentMessages: vi.fn(),
     sendMessage: vi.fn(),
   },
@@ -23,13 +24,13 @@ const INBOX = {
   total_pages: 1,
   results: [
     {
-      id: 7,
-      name: "Ama",
       email: "ama@example.com",
-      message: "How do I apply for DAAD?",
-      created_at: "2026-08-10T10:00:00Z",
-      is_handled: false,
-      replies: [],
+      name: "Ama",
+      last_message: "Second question - this is the newest message from Ama.",
+      last_at: "2026-08-10T10:00:00Z",
+      total: 2,
+      open_count: 1,
+      reply_count: 1,
     },
   ],
 };
@@ -47,31 +48,19 @@ afterEach(() => {
 });
 
 describe("AdminMessagesPage", () => {
-  it("lists inbox messages and sends a reply", async () => {
-    admin.contactMessages.mockResolvedValue(INBOX);
-    admin.replyToContact.mockResolvedValue({ id: 1 });
+  it("shows one clickable row per sender with the latest message", async () => {
+    admin.conversations.mockResolvedValue(INBOX);
 
     renderPage();
-    expect(await screen.findByText("Ama")).toBeInTheDocument();
-    expect(screen.getByText(/How do I apply for DAAD/)).toBeInTheDocument();
-    expect(screen.getByText("Open")).toBeInTheDocument();
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /^reply$/i }));
-    await user.type(
-      screen.getByPlaceholderText(/write your reply/i),
-      "Start at the DAAD page.",
-    );
-    await user.click(screen.getByRole("button", { name: /send reply/i }));
-
-    expect(admin.replyToContact).toHaveBeenCalledWith(7, {
-      subject: "Re: your message to myScholy",
-      body: "Start at the DAAD page.",
-    });
+    const link = await screen.findByRole("link", { name: "Ama" });
+    expect(link).toHaveAttribute("href", "/admin/messages/ama%40example.com");
+    expect(screen.getByText(/newest message from Ama/)).toBeInTheDocument();
+    expect(screen.getByText("1 open")).toBeInTheDocument();
+    expect(screen.getByText(/2 messages · 1 reply/)).toBeInTheDocument();
   });
 
   it("composes a new message through the send API", async () => {
-    admin.contactMessages.mockResolvedValue({
+    admin.conversations.mockResolvedValue({
       count: 0,
       page: 1,
       total_pages: 0,

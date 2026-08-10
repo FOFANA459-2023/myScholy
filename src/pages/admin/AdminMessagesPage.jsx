@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router";
 
 import { Page, PageHeader } from "../../components/layout/SiteLayout.jsx";
 import {
@@ -19,122 +20,47 @@ import { formatDate } from "../../lib/format.js";
 import { useApi, useMutation } from "../../lib/hooks.js";
 
 /**
- * Super-admin message centre. Incoming contact-form messages arrive here (and
- * in the myScholy inbox); replies and new messages are sent by the backend
- * from the myScholy address, so no personal account is ever the sender.
+ * Super-admin message centre, laid out like an email client: the inbox shows
+ * one row per sender with their latest message, and clicking a row opens the
+ * full thread on its own page (AdminConversationPage) where replies are sent
+ * from the myScholy address.
  */
 
-const DEFAULT_REPLY_SUBJECT = "Re: your message to myScholy";
-
-function ReplyForm({ message, onSent }) {
-  const [subject, setSubject] = useState(DEFAULT_REPLY_SUBJECT);
-  const [body, setBody] = useState("");
-  const send = useMutation((payload) => adminApi.replyToContact(message.id, payload));
-
-  const submit = async (event) => {
-    event.preventDefault();
-    const result = await send.mutate({ subject, body });
-    if (result.ok) {
-      setBody("");
-      onSent();
-    }
-  };
-
+function ConversationRow({ conversation }) {
   return (
-    <form onSubmit={submit} className="mt-4 space-y-3 border-t border-ink-200/70 pt-4">
-      {send.error && <Alert tone="error">{send.error.message}</Alert>}
-      <TextField
-        label="Subject"
-        value={subject}
-        onChange={(event) => setSubject(event.target.value)}
-        required
-      />
-      <TextAreaField
-        label={`Reply to ${message.email}`}
-        value={body}
-        onChange={(event) => setBody(event.target.value)}
-        rows={4}
-        placeholder="Write your reply..."
-        required
-      />
-      <div className="flex justify-end">
-        <Button type="submit" disabled={send.isPending || !body.trim()}>
-          {send.isPending ? "Sending..." : "Send reply"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function InboxMessage({ message, onChanged }) {
-  const [replying, setReplying] = useState(false);
-  const toggle = useMutation(() =>
-    adminApi.setContactHandled(message.id, !message.is_handled),
-  );
-
-  return (
-    <Card>
-      <CardBody>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-semibold text-ink-900">{message.name}</p>
-            <p className="text-sm text-ink-500">
-              {message.email} · {formatDate(message.created_at)}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge tone={message.is_handled ? "success" : "gold"}>
-              {message.is_handled ? "Handled" : "Open"}
-            </Badge>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={toggle.isPending}
-              onClick={async () => {
-                const result = await toggle.mutate();
-                if (result.ok) onChanged();
-              }}
+    <Card interactive className="group relative transition-colors hover:bg-brand-50/40">
+      <CardBody className="py-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-semibold text-ink-900">
+            {/* Stretched link: the whole stacked row opens the thread. */}
+            <Link
+              to={`/admin/messages/${encodeURIComponent(conversation.email)}`}
+              className="rounded after:absolute after:inset-0 after:content-[''] group-hover:text-brand-800"
             >
-              {message.is_handled ? "Reopen" : "Mark handled"}
-            </Button>
-            <Button size="sm" onClick={() => setReplying((value) => !value)}>
-              {replying ? "Close" : "Reply"}
-            </Button>
-          </div>
+              {conversation.name}
+            </Link>
+          </p>
+          <p className="text-xs text-ink-500">{formatDate(conversation.last_at)}</p>
         </div>
-
-        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink-700">
-          {message.message}
+        <p className="mt-0.5 text-sm text-ink-500">{conversation.email}</p>
+        <p className="mt-2 line-clamp-2 whitespace-pre-line text-sm text-ink-700">
+          {conversation.last_message}
         </p>
-
-        {message.replies?.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {message.replies.map((reply) => (
-              <div
-                key={reply.id}
-                className="rounded-lg border border-ink-200/70 bg-ink-50/60 px-3.5 py-2.5"
-              >
-                <p className="text-xs font-medium text-ink-500">
-                  Replied {formatDate(reply.created_at)}
-                  {reply.sent_by ? ` by ${reply.sent_by}` : ""} — {reply.subject}
-                </p>
-                <p className="mt-1 whitespace-pre-line text-sm text-ink-700">
-                  {reply.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {replying && (
-          <ReplyForm
-            message={message}
-            onSent={() => {
-              setReplying(false);
-              onChanged();
-            }}
-          />
-        )}
+        <div className="mt-3 flex items-center gap-2">
+          <Badge tone={conversation.open_count > 0 ? "gold" : "success"}>
+            {conversation.open_count > 0
+              ? `${conversation.open_count} open`
+              : "Handled"}
+          </Badge>
+          <span className="text-xs text-ink-400">
+            {conversation.total} message{conversation.total === 1 ? "" : "s"}
+            {conversation.reply_count > 0
+              ? ` · ${conversation.reply_count} repl${
+                  conversation.reply_count === 1 ? "y" : "ies"
+                }`
+              : ""}
+          </span>
+        </div>
       </CardBody>
     </Card>
   );
@@ -163,7 +89,11 @@ function ComposeForm({ onSent }) {
     <Card className="mb-6">
       <CardBody>
         <h2 className="mb-3 text-base font-semibold text-ink-900">New message</h2>
-        {send.error && <Alert tone="error" className="mb-3">{send.error.message}</Alert>}
+        {send.error && (
+          <Alert tone="error" className="mb-3">
+            {send.error.message}
+          </Alert>
+        )}
         {sentTo && !send.error && (
           <Alert tone="success" className="mb-3">
             Message sent to {sentTo} from the myScholy address.
@@ -240,7 +170,9 @@ function SentList() {
               To {row.to_email}
               {row.sent_by ? ` · sent by ${row.sent_by}` : ""}
             </p>
-            <p className="mt-2 whitespace-pre-line text-sm text-ink-700">{row.body}</p>
+            <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-700">
+              {row.body}
+            </p>
           </CardBody>
         </Card>
       ))}
@@ -260,7 +192,7 @@ export default function AdminMessagesPage() {
 
   const inbox = useApi(
     ({ signal }) =>
-      adminApi.contactMessages({ page: page > 1 ? page : undefined }, { signal }),
+      adminApi.conversations({ page: page > 1 ? page : undefined }, { signal }),
     [page],
     { keepPreviousData: true, refetchOnFocus: true },
   );
@@ -270,7 +202,7 @@ export default function AdminMessagesPage() {
       <PageHeader
         back={{ to: "/admin", label: "Dashboard" }}
         title="Messages"
-        description="Contact-form messages arrive here and in the myScholy inbox. Replies and new messages send from the myScholy address."
+        description="One row per sender, like an inbox - open a thread to read the full exchange and reply from the myScholy address."
         actions={
           <Button onClick={() => setComposing((value) => !value)}>
             {composing ? "Close composer" : "New message"}
@@ -309,11 +241,12 @@ export default function AdminMessagesPage() {
           description="Messages from the contact form will appear here."
         />
       ) : (
-        <div className="space-y-4">
-          {inbox.data.results.map((message) => (
-            <InboxMessage key={message.id} message={message} onChanged={inbox.refetch} />
+        <div className="space-y-3">
+          {inbox.data.results.map((conversation) => (
+            <ConversationRow key={conversation.email} conversation={conversation} />
           ))}
           <Pagination
+            className="mt-6"
             page={inbox.data.page}
             totalPages={inbox.data.total_pages}
             onChange={setPage}

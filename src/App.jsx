@@ -32,6 +32,7 @@ const AdminUserDirectoryPage = lazy(() => import("./pages/admin/AdminUserDirecto
 const ScholarshipFormPage = lazy(() => import("./pages/admin/ScholarshipFormPage.jsx"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage.jsx"));
 const AdminMessagesPage = lazy(() => import("./pages/admin/AdminMessagesPage.jsx"));
+const AdminConversationPage = lazy(() => import("./pages/admin/AdminConversationPage.jsx"));
 
 export default function App() {
   return (
@@ -82,6 +83,7 @@ export default function App() {
           </Route>
           <Route path="admin/messages" element={<ProtectedRoute require="superadmin" />}>
             <Route index element={<AdminMessagesPage />} />
+            <Route path=":email" element={<AdminConversationPage />} />
           </Route>
 
           {/* Legacy URLs from the previous routing scheme */}
