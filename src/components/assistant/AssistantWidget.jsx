@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { assistant } from "../../lib/api/endpoints.js";
+import { useSession } from "../../lib/auth.js";
 import { LoadingDots } from "../ui/index.js";
 import AssistantMarkdown from "./assistantMarkdown.jsx";
 
@@ -8,10 +9,14 @@ const DISMISSED_KEY = "myscholy-assistant-dismissed";
 const AUTO_OPENED_KEY = "myscholy-assistant-auto-opened";
 const AUTO_OPEN_DELAY_MS = 5000;
 
-const GREETING = {
-  role: "model",
-  text: "Hello! I am the myScholy assistant. Ask me anything about scholarships on the site — by country, degree level or deadline — or about how myScholy works.",
-};
+function greetingText(firstName) {
+  return (
+    `Hi${firstName ? ` ${firstName}` : ""}! I'm the myScholy Assistant. ` +
+    "I can help you find opportunities, explore myScholy's services, answer " +
+    "questions about applications and learning, or simply help you navigate " +
+    "the platform. What can I help you with?"
+  );
+}
 
 /**
  * Floating site assistant, backed by /api/assistant/ on the Django side (the
@@ -23,9 +28,14 @@ const GREETING = {
  * remembered so returning visitors are never nagged.
  */
 export default function AssistantWidget() {
+  const { user } = useSession();
+  const firstName = (user?.first_name || "").trim();
+
   const [enabled, setEnabled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([GREETING]);
+  const [messages, setMessages] = useState(() => [
+    { role: "model", text: greetingText(firstName) },
+  ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
@@ -66,6 +76,16 @@ export default function AssistantWidget() {
       inputRef.current?.focus();
     }
   }, [open, messages, sending]);
+
+  // Signing in (or out) refreshes the greeting's name - but only while the
+  // conversation is still just the greeting, never mid-chat.
+  useEffect(() => {
+    setMessages((previous) =>
+      previous.length === 1 && previous[0].role === "model"
+        ? [{ role: "model", text: greetingText(firstName) }]
+        : previous,
+    );
+  }, [firstName]);
 
   if (!enabled) return null;
 

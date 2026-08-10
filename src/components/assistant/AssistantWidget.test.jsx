@@ -58,4 +58,42 @@ describe("AssistantWidget", () => {
     await screen.findByRole("button", { name: /open myscholy assistant/i });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("greets guests without a name", async () => {
+    assistant.status.mockResolvedValue({ enabled: true });
+
+    render(<AssistantWidget />);
+    const launcher = await screen.findByRole("button", {
+      name: /open myscholy assistant/i,
+    });
+    await userEvent.setup().click(launcher);
+
+    expect(
+      screen.getByText(/^Hi! I'm the myScholy Assistant\./),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/What can I help you with\?/)).toBeInTheDocument();
+  });
+
+  it("greets signed-in students by first name", async () => {
+    const { setSession, clearSession } = await import("../../lib/auth.js");
+    setSession({
+      user: { id: 1, first_name: "Ama", user_type: "student" },
+      tokens: { access: "a", refresh: "r" },
+    });
+    assistant.status.mockResolvedValue({ enabled: true });
+
+    try {
+      render(<AssistantWidget />);
+      const launcher = await screen.findByRole("button", {
+        name: /open myscholy assistant/i,
+      });
+      await userEvent.setup().click(launcher);
+
+      expect(
+        screen.getByText(/^Hi Ama! I'm the myScholy Assistant\./),
+      ).toBeInTheDocument();
+    } finally {
+      clearSession();
+    }
+  });
 });
