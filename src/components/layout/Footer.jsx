@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router";
-import { FaEnvelope, FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
+import { FaEnvelope, FaFacebook, FaLinkedin, FaTiktok } from "react-icons/fa";
 
 const QUICK_LINKS = [
   { to: "/scholarships", label: "Scholarships" },
@@ -65,9 +65,21 @@ export default function Footer() {
             </ul>
             <div className="mt-4 flex gap-4">
               {[
-                { href: "https://www.facebook.com/", Icon: FaFacebook, label: "Facebook" },
-                { href: "https://www.instagram.com/", Icon: FaInstagram, label: "Instagram" },
-                { href: "https://www.linkedin.com/", Icon: FaLinkedin, label: "LinkedIn" },
+                {
+                  href: "https://www.facebook.com/profile.php?id=61593214347709",
+                  Icon: FaFacebook,
+                  label: "Facebook",
+                },
+                {
+                  href: "https://www.tiktok.com/@myscholy53",
+                  Icon: FaTiktok,
+                  label: "TikTok",
+                },
+                {
+                  href: "https://www.linkedin.com/company/myscholy2025/",
+                  Icon: FaLinkedin,
+                  label: "LinkedIn",
+                },
               ].map(({ href, Icon, label }) => (
                 <a
                   key={label}
