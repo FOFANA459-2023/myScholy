@@ -187,6 +187,16 @@ export default function AdminDashboardPage() {
             badge={<Badge tone="gold">Super admin</Badge>}
           />
         )}
+        {isSuperAdmin && (
+          <SectionCard
+            to="/admin/messages"
+            title="Messages"
+            description="Read contact-form messages and reply or compose email from the myScholy address."
+            tone="brand"
+            icon={icon("M3 8l9 6 9-6M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z")}
+            badge={<Badge tone="gold">Super admin</Badge>}
+          />
+        )}
       </div>
     </Page>
   );

@@ -137,6 +137,21 @@ export const admin = {
 
   contactMessages: (params, options) =>
     api.get("/admin/contact/", { params, ...options }),
+
+  /** Super admin only: mark a contact message handled/unhandled. */
+  setContactHandled: (id, isHandled) =>
+    api.patch(`/admin/contact/${id}/`, { is_handled: isHandled }),
+
+  /** Super admin only: email a reply to a contact message (marks it handled). */
+  replyToContact: (id, payload) =>
+    api.post(`/admin/contact/${id}/reply/`, payload),
+
+  /** Super admin only: sent-mail history. */
+  sentMessages: (params, options) =>
+    api.get("/admin/messages/", { params, ...options }),
+
+  /** Super admin only: compose and send a new email from the myScholy address. */
+  sendMessage: (payload) => api.post("/admin/messages/", payload),
 };
 
 // ---------------------------------------------------------------------------
