@@ -163,6 +163,10 @@ jobs:
     environment:
       name: production
     steps:
+      # The checkout provides functions/ (Pages Functions are compiled from
+      # the repo root at deploy time, not from dist). Without it, wrangler
+      # silently deploys a static-only site and every function disappears.
+      - uses: actions/checkout@v4
       - name: Download the tested production bundle
         uses: actions/download-artifact@v4
         with:

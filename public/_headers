@@ -1,15 +1,21 @@
-# Cloudflare Pages headers configuration
-# Cache static assets for better performance
-/assets/*
-  Cache-Control: public, max-age=31536000, immutable
+# Cloudflare Pages headers configuration.
+# When several rules match, the LAST matching rule wins for a given header.
 
-# Don't cache HTML files
-/*.html
-  Cache-Control: public, max-age=0, must-revalidate
-
-# Security headers
+# The SPA's HTML is served at extensionless URLs (/, /scholarships,
+# /scholarships/<slug>, ...) via the _redirects rewrite, so the document must
+# always revalidate. A previous rule only matched /*.html - which no real
+# page URL ever hits - so browsers cached the app shell heuristically and
+# kept running old bundles after deploys.
 /*
+  Cache-Control: public, max-age=0, must-revalidate
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
+# Hashed build assets never change content under the same name.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The social card fallback image; safe to cache for a day.
+/og-image.png
+  Cache-Control: public, max-age=86400

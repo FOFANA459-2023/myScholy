@@ -76,10 +76,12 @@ export async function onRequestGet({ request, params, env }) {
         /(<meta[^>]*property="og:url"[^>]*content=")[^"]*(")/,
         `$1${url}$2`,
       );
+      // Each scholarship gets its own generated card (name + key facts on
+      // the brand background), rendered by the backend.
       html = setTag(
         html,
         /(<meta[^>]*property="og:image"[^>]*content=")[^"]*(")/,
-        `$1${escapeHtml(`${origin}/og-image.png`)}$2`,
+        `$1${escapeHtml(`${API}/scholarships/${scholarship.slug}/card.png`)}$2`,
       );
     }
   } catch {
