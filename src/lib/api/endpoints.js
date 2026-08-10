@@ -35,6 +35,14 @@ export const scholarships = {
   detail: (id, options) =>
     api.get(`/scholarships/${id}/`, { cache: DETAIL_CACHE, auth: false, ...options }),
 
+  /** Live scholarships similar to this one, for the detail page. */
+  similar: (slug, options) =>
+    api.get(`/scholarships/${slug}/similar/`, {
+      cache: DETAIL_CACHE,
+      auth: false,
+      ...options,
+    }),
+
   facets: (options) =>
     api.get("/scholarships/facets/", { cache: FACET_CACHE, auth: false, ...options }),
 

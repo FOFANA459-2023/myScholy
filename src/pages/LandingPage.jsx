@@ -6,6 +6,7 @@ import { Button } from "../components/ui/index.js";
 import FaqSection from "../features/marketing/FaqSection.jsx";
 import RoadmapSection from "../features/marketing/RoadmapSection.jsx";
 import UniversityCarousel from "../features/marketing/UniversityCarousel.jsx";
+import { WHATSAPP_COMMUNITY_LINK } from "../lib/links.js";
 
 const HIGHLIGHTS = [
   { value: "Global", label: "Opportunities from every continent" },
@@ -45,8 +46,8 @@ export default function LandingPage() {
             <Button to="/scholarships" size="lg" variant="gold">
               Explore scholarships
             </Button>
-            <Button to="/assessment" size="lg" variant="onBrand">
-              Take the assessment
+            <Button href={WHATSAPP_COMMUNITY_LINK} size="lg" variant="onBrand">
+              Join our community
             </Button>
           </div>
 

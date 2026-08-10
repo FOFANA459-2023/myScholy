@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Link, useParams } from "react-router";
 
 import { Page } from "../components/layout/SiteLayout.jsx";
+import ScholarshipCard from "../features/scholarships/ScholarshipCard.jsx";
 import {
   Badge,
   Button,
@@ -80,6 +81,12 @@ export default function ScholarshipDetailPage() {
   const { slug } = useParams();
   const { data, error, isLoading, refetch } = useApi(
     ({ signal }) => scholarshipsApi.detail(slug, { signal }),
+    [slug],
+  );
+  // Suggestions load independently: the main record never waits on them, and
+  // a failure here simply hides the strip.
+  const similar = useApi(
+    ({ signal }) => scholarshipsApi.similar(slug, { signal }),
     [slug],
   );
 
@@ -166,6 +173,22 @@ export default function ScholarshipDetailPage() {
               </section>
             </CardBody>
           </Card>
+
+          {similar.data?.length > 0 && (
+            <section aria-labelledby="similar-heading">
+              <h2
+                id="similar-heading"
+                className="mb-4 text-lg font-semibold text-ink-900"
+              >
+                Similar scholarships still open
+              </h2>
+              <div className="grid gap-5 sm:grid-cols-2">
+                {similar.data.map((scholarship) => (
+                  <ScholarshipCard key={scholarship.id} scholarship={scholarship} />
+                ))}
+              </div>
+            </section>
+          )}
         </article>
       )}
     </Page>
