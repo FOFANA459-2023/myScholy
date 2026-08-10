@@ -41,7 +41,9 @@ export default function App() {
 
           {/* Public */}
           <Route path="scholarships" element={<ScholarshipListPage />} />
-          <Route path="scholarships/:id" element={<ScholarshipDetailPage />} />
+          {/* :slug is the scholarship name slug; the API also resolves a
+              numeric id here so pre-slug bookmarks and emailed links work. */}
+          <Route path="scholarships/:slug" element={<ScholarshipDetailPage />} />
           {/* The programs page was retired; the assessment covers its job. */}
           <Route path="programs" element={<Navigate to="/assessment" replace />} />
           <Route path="assessment" element={<AssessmentPage />} />

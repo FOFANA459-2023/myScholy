@@ -77,10 +77,10 @@ function Fact({ label, value }) {
 }
 
 export default function ScholarshipDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { data, error, isLoading, refetch } = useApi(
-    ({ signal }) => scholarshipsApi.detail(id, { signal }),
-    [id],
+    ({ signal }) => scholarshipsApi.detail(slug, { signal }),
+    [slug],
   );
 
   return (

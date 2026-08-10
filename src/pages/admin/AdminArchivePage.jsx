@@ -145,7 +145,7 @@ export default function AdminArchivePage() {
                     <tr key={scholarship.id} className="transition-colors hover:bg-ink-50/70">
                       <td className="px-5 py-3.5 text-sm font-medium text-ink-900">
                         <Link
-                          to={`/scholarships/${scholarship.id}`}
+                          to={`/scholarships/${scholarship.slug || scholarship.id}`}
                           className="rounded hover:text-brand-700"
                         >
                           {scholarship.name}

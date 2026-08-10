@@ -355,7 +355,7 @@ export default function EligibilityCheck() {
                       {aiResult.scholarships.map((row) => (
                         <li key={row.id}>
                           <Link
-                            to={`/scholarships/${row.id}`}
+                            to={`/scholarships/${row.slug || row.id}`}
                             className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm transition-colors hover:border-brand-300 hover:bg-brand-50/50"
                           >
                             <span className="font-medium text-brand-800">

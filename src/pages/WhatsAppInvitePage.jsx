@@ -6,7 +6,7 @@ import { Page } from "../components/layout/SiteLayout.jsx";
 import { Button, Card, CardBody } from "../components/ui/index.js";
 import { useSession } from "../lib/auth.js";
 
-const WHATSAPP_LINK = "https://chat.whatsapp.com/BTZ8P8BZFzuByy9MKD40r7";
+const WHATSAPP_LINK = "https://chat.whatsapp.com/LTH48AjyMpTAjfz5rAaWrl";
 
 export default function WhatsAppInvitePage() {
   const { isAuthenticated } = useSession();

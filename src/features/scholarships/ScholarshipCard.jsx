@@ -50,7 +50,7 @@ const ScholarshipCard = React.memo(function ScholarshipCard({ scholarship }) {
           {/* Stretched link keeps the whole card clickable without nesting
               interactive elements inside each other. */}
           <Link
-            to={`/scholarships/${scholarship.id}`}
+            to={`/scholarships/${scholarship.slug || scholarship.id}`}
             className="rounded after:absolute after:inset-0 after:content-[''] group-hover:text-brand-800"
           >
             {scholarship.name}
