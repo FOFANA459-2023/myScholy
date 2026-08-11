@@ -1,17 +1,80 @@
-# MyScholy — Frontend
+# myScholy
 
-React + Vite + Tailwind client for the MyScholy scholarship board.
+[![CI](https://github.com/FOFANA459-2023/myScholy/actions/workflows/ci.yml/badge.svg)](https://github.com/FOFANA459-2023/myScholy/actions/workflows/ci.yml)
+
+A scholarship board that helps students — starting with students across Africa — find and apply for opportunities they would otherwise miss.
+
+**Live at [myscholy.pages.dev](https://myscholy.pages.dev)**
+
+## Why I built this
+
+A lot of good scholarships go unclaimed because students hear about them too late, or never at all. myScholy puts live opportunities in one place, lets students check whether they actually qualify, and emails them new ones automatically so they don't have to keep checking.
+
+I built the whole thing myself — frontend, API, infrastructure — and it runs in production with real users.
+
+## What it does
+
+**For students**
+- Browse and filter live scholarships by country, degree level, and funding type — every filtered view is a shareable URL
+- Ask the site assistant questions, or take a short quiz that tells you which scholarships fit you (Gemini-powered)
+- Get an email digest of 5 live scholarships every 15 hours
+- Every scholarship has its own social preview card, so links shared on WhatsApp or Facebook look right
+
+**For admins**
+- Post a scholarship by pasting the announcement text, a link, or a PDF — the form fills itself, and it warns you if the scholarship is already on the board
+- Dashboard with statistics, a user directory, CSV exports, and archive/repost workflows
+- A message center that works like an email inbox: contact-form threads grouped by sender, with replies sent from the myScholy address
+
+## How it's built
+
+```mermaid
+graph LR
+    U[Students & Admins] --> CF[React + Vite + Tailwind<br/>Cloudflare Pages]
+    CF --> API[Django REST API<br/>Oracle Cloud VM<br/>Gunicorn · Caddy · systemd]
+    API --> DB[(PostgreSQL<br/>Supabase)]
+    API --> AI[Gemini API<br/>Groq failover]
+    API --> MAIL[Email<br/>React Email · Resend/SMTP]
+    T[systemd timer<br/>every 15h] --> API
+    R[Render<br/>warm standby] -.failover.- DB
+```
+
+- **Frontend** — React (Vite) + Tailwind CSS on Cloudflare Pages, deployed by GitHub Actions
+- **Backend** — Django REST Framework on an Oracle Cloud VM (Gunicorn behind Caddy with automatic HTTPS, managed by systemd), with a warm standby on Render sharing the same database for one-variable failover
+- **Data** — PostgreSQL (Supabase) + Redis caching
+- **AI** — Google Gemini with automatic Groq failover on rate limits
+
+## Things I'm proud of
+
+- The data layer is a single hand-written fetch wrapper: it attaches and refreshes JWTs (concurrent refreshes collapse into one request), de-duplicates identical in-flight GETs, and serves a stale-while-revalidate cache where each mutation declares the tags it invalidates
+- Every push runs ESLint/Ruff, 200+ unit tests (Vitest + Django), and Playwright end-to-end tests, then deploys automatically if everything is green
+- Server-side URL fetching has an SSRF guard, public endpoints are rate-limited, permissions are role-based with cached lookups, and the browser never holds a database key
+- The digest job records each send in the database, so even if two servers trigger it, students can't get emailed twice — and it runs on a systemd timer because cron can't express "every 15 hours"
+
+## Run it locally
 
 ```bash
 npm install
 cp .env.example .env       # point VITE_BACKEND_URL at the Django API
-npm run dev
+npm run dev                # dev server on :5173
 ```
 
-The app talks only to the Django API. There is no Supabase client — the browser
-never holds a database key.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | dev server on :5173 |
+| `npm run build` | production build |
+| `npm run preview` | serve the build on :4173 |
+| `npm run lint` | ESLint |
+| `npx vitest run` | unit tests |
+| `npx playwright test` | end-to-end tests |
 
-## Layout
+The backend lives in its own repo: [myScholyScholarship_Backend](https://github.com/FOFANA459-2023/myScholyScholarship_Backend).
+
+---
+
+## Developer notes
+
+<details>
+<summary><strong>Project layout</strong></summary>
 
 ```
 src/
@@ -37,7 +100,10 @@ src/
   pages/                   one file per screen, admin screens under pages/admin
 ```
 
-## Data layer
+</details>
+
+<details>
+<summary><strong>Data layer</strong></summary>
 
 `lib/api/client.js` is the only place that calls `fetch`. It handles:
 
@@ -63,7 +129,10 @@ create: (payload) =>
 Screens use `useApi`, which aborts on unmount and ignores superseded responses,
 so a fast typist can never have an old search overwrite a newer one.
 
-## Filtering
+</details>
+
+<details>
+<summary><strong>Filtering</strong></summary>
 
 `useScholarshipQuery` keeps filter state in the URL (`?q=&country=&ongoing=`),
 debounces the search box, and sends the filters to the server. The browser
@@ -72,7 +141,10 @@ text) rather than the whole table.
 
 Any filtered view is therefore shareable and survives a refresh.
 
-## Design tokens
+</details>
+
+<details>
+<summary><strong>Design tokens</strong></summary>
 
 `tailwind.config.js` defines `brand` (navy → sky) and `gold`, which hold the
 same values the site already used — `brand-900` is `sky-900`, `gold-600` is
@@ -85,7 +157,10 @@ stays consistent.
 - Focus rings are applied globally in `styles/index.css`; don't add per-element
   `focus:ring-*` classes.
 
-## Routes
+</details>
+
+<details>
+<summary><strong>Routes</strong></summary>
 
 | Path | Access |
 | --- | --- |
@@ -99,22 +174,18 @@ Guards live in `routes/ProtectedRoute.jsx` and run before the protected screen
 renders. Old URLs (`/scholarship-list`, `/post-scholarship`, `/super-admin-panel`,
 …) redirect to their new equivalents.
 
-## Scripts
+</details>
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | dev server on :5173 |
-| `npm run build` | production build |
-| `npm run preview` | serve the build on :4173 |
-| `npm run lint` | ESLint |
-
-## Deployment (Cloudflare Pages)
+<details>
+<summary><strong>Deployment (Cloudflare Pages)</strong></summary>
 
 - Build command `npm run build`, output directory `dist`.
-- Set `VITE_BACKEND_URL=https://myscholyscholarship-backend.onrender.com/api`
-  as a build environment variable — Vite bakes it in at build time.
+- Set `VITE_BACKEND_URL` to the Django API as a build environment variable —
+  Vite bakes it in at build time.
 - `public/_redirects` (`/* /index.html 200`) makes deep links and hard
   refreshes work with client-side routing.
 - If the site runs on a custom domain, add that origin to
-  `DJANGO_CORS_ALLOWED_ORIGINS` on the Render backend; `*.pages.dev` preview
+  `DJANGO_CORS_ALLOWED_ORIGINS` on the backend; `*.pages.dev` preview
   URLs are already allowed.
+
+</details>
