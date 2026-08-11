@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 import { Page, PageHeader } from "../../components/layout/SiteLayout.jsx";
 import {
@@ -66,8 +66,40 @@ function ThreadItem({ item }) {
   );
 }
 
+function ConfirmDelete({ email, onCancel, onConfirm, isPending }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-ink-900/50 p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-thread-title"
+    >
+      <div className="surface w-full max-w-md p-6">
+        <h2 id="delete-thread-title" className="text-lg font-semibold text-ink-900">
+          Delete this conversation?
+        </h2>
+        <p className="mt-2 text-sm text-ink-600">
+          Every message from{" "}
+          <span className="font-medium text-ink-800">{email}</span> will be
+          permanently removed from the inbox. Replies you sent stay in the Sent
+          tab. This cannot be undone.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="subtle" onClick={onCancel} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onConfirm} loading={isPending}>
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminConversationPage() {
   const { email } = useParams();
+  const navigate = useNavigate();
   const thread = useApi(
     ({ signal }) => adminApi.conversation(email, { signal }),
     [email],
@@ -96,6 +128,14 @@ export default function AdminConversationPage() {
   const toggle = useMutation(() =>
     adminApi.setConversationHandled(email, thread.data?.open_count > 0),
   );
+  const remove = useMutation(() => adminApi.deleteConversation(email));
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const handleDelete = async () => {
+    const result = await remove.mutate();
+    setConfirmingDelete(false);
+    if (result.ok) navigate("/admin/messages");
+  };
 
   const submitReply = async (event) => {
     event.preventDefault();
@@ -132,10 +172,32 @@ export default function AdminConversationPage() {
               >
                 {thread.data.open_count > 0 ? "Mark handled" : "Reopen"}
               </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                Delete
+              </Button>
             </div>
           )
         }
       />
+
+      {confirmingDelete && (
+        <ConfirmDelete
+          email={thread.data?.email || decodeURIComponent(email)}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={handleDelete}
+          isPending={remove.isPending}
+        />
+      )}
+
+      {remove.error && (
+        <Alert tone="error" className="mb-4">
+          {remove.error.message}
+        </Alert>
+      )}
 
       {thread.isLoading ? (
         <SkeletonGrid count={3} />

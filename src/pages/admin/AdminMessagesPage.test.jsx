@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { MemoryRouter } from "react-router";
@@ -13,6 +13,7 @@ vi.mock("../../lib/api/endpoints.js", () => ({
     conversation: vi.fn(),
     replyToConversation: vi.fn(),
     setConversationHandled: vi.fn(),
+    deleteConversation: vi.fn(),
     sentMessages: vi.fn(),
     sendMessage: vi.fn(),
   },
@@ -85,6 +86,27 @@ describe("AdminMessagesPage", () => {
     });
     expect(
       await screen.findByText(/sent to partner@example.com/i),
+    ).toBeInTheDocument();
+  });
+
+  it("deletes a sender's messages after confirming", async () => {
+    admin.conversations.mockResolvedValue(INBOX);
+    admin.deleteConversation.mockResolvedValue(undefined);
+
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /^delete$/i }));
+
+    // The confirmation dialog names the address and warns about permanence.
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("ama@example.com");
+    expect(dialog).toHaveTextContent(/cannot be undone/i);
+
+    await user.click(within(dialog).getByRole("button", { name: /^delete$/i }));
+
+    expect(admin.deleteConversation).toHaveBeenCalledWith("ama@example.com");
+    expect(
+      await screen.findByText(/messages from ama@example.com were deleted/i),
     ).toBeInTheDocument();
   });
 });

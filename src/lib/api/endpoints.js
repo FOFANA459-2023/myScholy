@@ -164,6 +164,13 @@ export const admin = {
       is_handled: isHandled,
     }),
 
+  /**
+   * Super admin only: delete a student's messages, dropping the thread from
+   * the inbox. Admin replies stay in the sent-mail history.
+   */
+  deleteConversation: (email) =>
+    api.delete(`/admin/conversations/${encodeURIComponent(email)}/`),
+
   /** Super admin only: sent-mail history. */
   sentMessages: (params, options) =>
     api.get("/admin/messages/", { params, ...options }),

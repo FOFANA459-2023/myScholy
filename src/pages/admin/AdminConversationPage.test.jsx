@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { MemoryRouter, Route, Routes } from "react-router";
@@ -12,6 +12,7 @@ vi.mock("../../lib/api/endpoints.js", () => ({
     conversation: vi.fn(),
     replyToConversation: vi.fn(),
     setConversationHandled: vi.fn(),
+    deleteConversation: vi.fn(),
   },
 }));
 
@@ -53,6 +54,7 @@ function renderPage() {
     <MemoryRouter initialEntries={["/admin/messages/ama%40example.com"]}>
       <Routes>
         <Route path="/admin/messages/:email" element={<AdminConversationPage />} />
+        <Route path="/admin/messages" element={<p>Back at the inbox</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -97,5 +99,25 @@ describe("AdminConversationPage", () => {
     expect(
       await screen.findByText(/reply sent from the myScholy address/i),
     ).toBeInTheDocument();
+  });
+
+  it("deletes the conversation after confirming and returns to the inbox", async () => {
+    admin.conversation.mockResolvedValue(THREAD);
+    admin.deleteConversation.mockResolvedValue(undefined);
+
+    renderPage();
+    await screen.findByText("How do I apply for DAAD?");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /^delete$/i }));
+    // The confirmation dialog names the address and warns about permanence.
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("ama@example.com");
+    expect(dialog).toHaveTextContent(/cannot be undone/i);
+
+    await user.click(within(dialog).getByRole("button", { name: /^delete$/i }));
+
+    expect(admin.deleteConversation).toHaveBeenCalledWith("ama@example.com");
+    expect(await screen.findByText("Back at the inbox")).toBeInTheDocument();
   });
 });

@@ -26,7 +26,41 @@ import { useApi, useMutation } from "../../lib/hooks.js";
  * from the myScholy address.
  */
 
-function ConversationRow({ conversation }) {
+function ConfirmDelete({ conversation, onCancel, onConfirm, isPending }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-ink-900/50 p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-conversation-title"
+    >
+      <div className="surface w-full max-w-md p-6">
+        <h2
+          id="delete-conversation-title"
+          className="text-lg font-semibold text-ink-900"
+        >
+          Delete this conversation?
+        </h2>
+        <p className="mt-2 text-sm text-ink-600">
+          Every message from{" "}
+          <span className="font-medium text-ink-800">{conversation.email}</span>{" "}
+          will be permanently removed from the inbox. Replies you sent stay in
+          the Sent tab. This cannot be undone.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="subtle" onClick={onCancel} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onConfirm} loading={isPending}>
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConversationRow({ conversation, onDelete }) {
   return (
     <Card interactive className="group relative transition-colors hover:bg-brand-50/40">
       <CardBody className="py-4">
@@ -67,6 +101,15 @@ function ConversationRow({ conversation }) {
                 }`
               : ""}
           </span>
+          {/* z-10 lifts the button above the row's stretched link. */}
+          <Button
+            size="sm"
+            variant="danger"
+            className="relative z-10 ml-auto"
+            onClick={() => onDelete(conversation)}
+          >
+            Delete
+          </Button>
         </div>
       </CardBody>
     </Card>
@@ -196,6 +239,8 @@ export default function AdminMessagesPage() {
   const [tab, setTab] = useState("inbox");
   const [composing, setComposing] = useState(false);
   const [page, setPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   const inbox = useApi(
     ({ signal }) =>
@@ -203,6 +248,22 @@ export default function AdminMessagesPage() {
     [page],
     { keepPreviousData: true, refetchOnFocus: true },
   );
+
+  const remove = useMutation((email) => adminApi.deleteConversation(email));
+
+  const handleDelete = async () => {
+    const result = await remove.mutate(pendingDelete.email);
+    if (result.ok) {
+      setNotice({
+        tone: "success",
+        text: `Messages from ${pendingDelete.email} were deleted.`,
+      });
+      inbox.refetch();
+    } else {
+      setNotice({ tone: "error", text: result.error.message });
+    }
+    setPendingDelete(null);
+  };
 
   return (
     <Page>
@@ -218,6 +279,21 @@ export default function AdminMessagesPage() {
       />
 
       {composing && <ComposeForm onSent={inbox.refetch} />}
+
+      {notice && (
+        <Alert tone={notice.tone} className="mb-4">
+          {notice.text}
+        </Alert>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDelete
+          conversation={pendingDelete}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={handleDelete}
+          isPending={remove.isPending}
+        />
+      )}
 
       <div className="mb-5 flex gap-2">
         <Button
@@ -250,7 +326,11 @@ export default function AdminMessagesPage() {
       ) : (
         <div className="space-y-3">
           {inbox.data.results.map((conversation) => (
-            <ConversationRow key={conversation.email} conversation={conversation} />
+            <ConversationRow
+              key={conversation.email}
+              conversation={conversation}
+              onDelete={setPendingDelete}
+            />
           ))}
           <Pagination
             className="mt-6"
