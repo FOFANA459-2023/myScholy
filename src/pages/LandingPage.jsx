@@ -4,6 +4,7 @@ import ALACampus from "../assets/ALACampus.jpg";
 import admissionPhoto from "../assets/admission.jpg";
 import { Button } from "../components/ui/index.js";
 import FaqSection from "../features/marketing/FaqSection.jsx";
+import LatestInsights from "../features/marketing/LatestInsights.jsx";
 import RoadmapSection from "../features/marketing/RoadmapSection.jsx";
 import UniversityCarousel from "../features/marketing/UniversityCarousel.jsx";
 import { WHATSAPP_COMMUNITY_LINK } from "../lib/links.js";
@@ -13,6 +14,7 @@ const HIGHLIGHTS = [
   { value: "Free", label: "No fees, ever, to browse or apply" },
   { value: "Weekly", label: "New scholarships added regularly" },
 ];
+
 
 export default function LandingPage() {
   return (
@@ -45,6 +47,9 @@ export default function LandingPage() {
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Button to="/scholarships" size="lg" variant="gold">
               Explore scholarships
+            </Button>
+            <Button to="/assessment" size="lg" variant="onBrand">
+              Take the assessment
             </Button>
             <Button href={WHATSAPP_COMMUNITY_LINK} size="lg" variant="onBrand">
               Join our community
@@ -112,10 +117,40 @@ export default function LandingPage() {
       </section>
 
       <UniversityCarousel />
+
+      {/* The newest mentor writing, with the writers' faces. */}
+      <LatestInsights />
+
       <RoadmapSection />
       {/* The full grouped FAQ lives here now - the standalone /faq page was
           removed, and this is the only place the complete set is rendered. */}
       <FaqSection grouped />
+
+      {/* Closing call to action, so the page ends on a next step rather than
+          on the last FAQ answer. */}
+      <section className="relative isolate overflow-hidden bg-brand-950 py-16 sm:py-20">
+        <div
+          aria-hidden="true"
+          className="absolute -right-24 -top-32 -z-10 h-96 w-96 rounded-full bg-gold-500/20 blur-[100px]"
+        />
+        <div className="container text-center">
+          <h2 className="mx-auto max-w-2xl text-3xl font-bold text-white sm:text-4xl">
+            The next deadline is already coming.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-white/70">
+            Browsing is free and needs no account. Start with the board, or let
+            the two-minute assessment narrow it down for you.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button to="/scholarships" size="lg" variant="gold">
+              Browse scholarships
+            </Button>
+            <Button to="/assessment" size="lg" variant="onBrand">
+              Take the fit assessment
+            </Button>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

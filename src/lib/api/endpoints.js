@@ -13,6 +13,7 @@ export const TAGS = {
   scholarships: "scholarships",
   admins: "admins",
   statistics: "statistics",
+  articles: "articles",
 };
 
 const MINUTE = 60_000;
@@ -74,6 +75,126 @@ export const scholarships = {
     }),
 
   exportCsv: () => download("/admin/scholarships/export/", "scholarships.csv"),
+};
+
+// ---------------------------------------------------------------------------
+// Insights (mentor & contributing-writer articles)
+// ---------------------------------------------------------------------------
+
+// Articles are edited far less often than they are read, so the feed can hold
+// a little longer than the scholarship board.
+const ARTICLE_LIST_CACHE = { ttl: 5 * MINUTE, maxAge: 60 * MINUTE, tags: [TAGS.articles] };
+const ARTICLE_DETAIL_CACHE = {
+  ttl: 10 * MINUTE,
+  maxAge: 2 * 60 * MINUTE,
+  tags: [TAGS.articles],
+};
+
+/**
+ * URL for a stored image id, as returned on `author_photo` / `cover`.
+ *
+ * The API deliberately returns bare ids rather than absolute URLs, so its
+ * cached payloads carry no hostname and stay valid behind either server. The
+ * client is the right place to know where the API lives.
+ */
+export function imageUrl(id) {
+  return id ? `${API_BASE_URL}/images/${id}/` : null;
+}
+
+export const images = {
+  /**
+   * Admin-only: upload one image and get its id back.
+   *
+   * Multipart, so it bypasses the JSON client. The server re-encodes whatever
+   * arrives (stripping EXIF, including any GPS coordinates in a phone photo)
+   * before storing it - see backend/scholarships/images.py.
+   *
+   * @param {File} file
+   * @param {"avatar"|"cover"} variant  decides the longest-edge budget
+   */
+  upload: async (file, variant = "avatar") => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("variant", variant);
+
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}/admin/images/`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
+        body: form,
+      });
+    } catch {
+      throw new ApiError(
+        "We couldn't reach the server. Check your connection and try again.",
+        { status: 0 },
+      );
+    }
+
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new ApiError(data?.error || `Upload failed (${response.status})`, {
+        status: response.status,
+        data,
+      });
+    }
+    return data;
+  },
+};
+
+export const articles = {
+  list: (params, options) =>
+    api.get("/articles/", {
+      params,
+      cache: ARTICLE_LIST_CACHE,
+      auth: false,
+      ...options,
+    }),
+
+  detail: (slug, options) =>
+    api.get(`/articles/${slug}/`, {
+      cache: ARTICLE_DETAIL_CACHE,
+      auth: false,
+      ...options,
+    }),
+
+  /** Up to three more pieces to read after this one. */
+  related: (slug, options) =>
+    api.get(`/articles/${slug}/related/`, {
+      cache: ARTICLE_DETAIL_CACHE,
+      auth: false,
+      ...options,
+    }),
+
+  /** Every topic with its live count, for the filter chips. */
+  topics: (options) =>
+    api.get("/articles/topics/", {
+      cache: { ttl: 0, maxAge: 10 * MINUTE, tags: [TAGS.articles] },
+      auth: false,
+      ...options,
+    }),
+
+  /** Masthead counts and the contributor line-up, for the Insights hero. */
+  highlights: (options) =>
+    api.get("/articles/highlights/", {
+      cache: ARTICLE_LIST_CACHE,
+      auth: false,
+      ...options,
+    }),
+
+  adminList: (params, options) =>
+    api.get("/admin/articles/", { params, cache: ARTICLE_LIST_CACHE, ...options }),
+
+  adminDetail: (id, options) => api.get(`/admin/articles/${id}/`, options),
+
+  create: (payload) =>
+    api.post("/admin/articles/", payload, { invalidates: [TAGS.articles] }),
+
+  update: (id, payload) =>
+    api.put(`/admin/articles/${id}/`, payload, { invalidates: [TAGS.articles] }),
+
+  remove: (id) =>
+    api.delete(`/admin/articles/${id}/`, { invalidates: [TAGS.articles] }),
 };
 
 // ---------------------------------------------------------------------------
@@ -175,8 +296,15 @@ export const admin = {
   sentMessages: (params, options) =>
     api.get("/admin/messages/", { params, ...options }),
 
-  /** Super admin only: compose and send a new email from the myScholy address. */
+  /**
+   * Super admin only: compose and send from the myScholy address.
+   * Payload carries either `to_email` (one person) or `audience` (a group).
+   */
   sendMessage: (payload) => api.post("/admin/messages/", payload),
+
+  /** Super admin only: the recipient groups the composer offers, with counts. */
+  messageAudiences: (options) =>
+    api.get("/admin/messages/audiences/", options),
 };
 
 // ---------------------------------------------------------------------------

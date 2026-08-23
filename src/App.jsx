@@ -13,6 +13,8 @@ import LandingPage from "./pages/LandingPage.jsx";
  */
 const ScholarshipListPage = lazy(() => import("./pages/ScholarshipListPage.jsx"));
 const ScholarshipDetailPage = lazy(() => import("./pages/ScholarshipDetailPage.jsx"));
+const InsightsPage = lazy(() => import("./pages/InsightsPage.jsx"));
+const InsightDetailPage = lazy(() => import("./pages/InsightDetailPage.jsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
 const AssessmentPage = lazy(() => import("./pages/AssessmentPage.jsx"));
 const ConsultingPage = lazy(() => import("./pages/ConsultingPage.jsx"));
@@ -30,6 +32,8 @@ const AdminScholarshipsPage = lazy(() => import("./pages/admin/AdminScholarships
 const AdminArchivePage = lazy(() => import("./pages/admin/AdminArchivePage.jsx"));
 const AdminUserDirectoryPage = lazy(() => import("./pages/admin/AdminUserDirectoryPage.jsx"));
 const ScholarshipFormPage = lazy(() => import("./pages/admin/ScholarshipFormPage.jsx"));
+const AdminArticlesPage = lazy(() => import("./pages/admin/AdminArticlesPage.jsx"));
+const ArticleFormPage = lazy(() => import("./pages/admin/ArticleFormPage.jsx"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage.jsx"));
 const AdminMessagesPage = lazy(() => import("./pages/admin/AdminMessagesPage.jsx"));
 const AdminConversationPage = lazy(() => import("./pages/admin/AdminConversationPage.jsx"));
@@ -46,6 +50,9 @@ export default function App() {
           {/* :slug is the scholarship name slug; the API also resolves a
               numeric id here so pre-slug bookmarks and emailed links work. */}
           <Route path="scholarships/:slug" element={<ScholarshipDetailPage />} />
+          {/* Insights: mentor and contributing-writer articles. */}
+          <Route path="insights" element={<InsightsPage />} />
+          <Route path="insights/:slug" element={<InsightDetailPage />} />
           {/* The programs page was retired; the assessment covers its job. */}
           <Route path="programs" element={<Navigate to="/assessment" replace />} />
           <Route path="assessment" element={<AssessmentPage />} />
@@ -74,6 +81,9 @@ export default function App() {
             <Route path="scholarships/archive" element={<AdminArchivePage />} />
             <Route path="scholarships/new" element={<ScholarshipFormPage mode="create" />} />
             <Route path="scholarships/:id/edit" element={<ScholarshipFormPage mode="edit" />} />
+            <Route path="articles" element={<AdminArticlesPage />} />
+            <Route path="articles/new" element={<ArticleFormPage mode="create" />} />
+            <Route path="articles/:id/edit" element={<ArticleFormPage mode="edit" />} />
             <Route path="users" element={<AdminUsersPage />} />
           </Route>
 

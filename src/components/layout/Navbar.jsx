@@ -178,6 +178,9 @@ export default function Navbar() {
             <NavLink to="/scholarships" className={linkClass}>
               Scholarships
             </NavLink>
+            <NavLink to="/insights" className={linkClass}>
+              Insights
+            </NavLink>
             <ServicesMenu />
             {isAdmin && (
               <NavLink to="/admin" className={linkClass}>
@@ -249,6 +252,9 @@ export default function Navbar() {
               </NavLink>
               <NavLink to="/scholarships" className={linkClass}>
                 Scholarships
+              </NavLink>
+              <NavLink to="/insights" className={linkClass}>
+                Insights
               </NavLink>
 
               {/* The Services dropdown flattens into a labelled group. */}

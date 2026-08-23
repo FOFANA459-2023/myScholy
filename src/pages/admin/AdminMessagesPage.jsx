@@ -15,6 +15,7 @@ import {
   TextAreaField,
   TextField,
 } from "../../components/ui/index.js";
+import RecipientField from "./RecipientField.jsx";
 import { admin as adminApi } from "../../lib/api/endpoints.js";
 import { formatDate } from "../../lib/format.js";
 import { useApi, useMutation } from "../../lib/hooks.js";
@@ -116,58 +117,124 @@ function ConversationRow({ conversation, onDelete }) {
   );
 }
 
+/** Guard on group sends: a message to every student cannot be unsent. */
+function ConfirmBroadcast({ audience, subject, onCancel, onConfirm, isPending }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-ink-900/50 p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="broadcast-title"
+    >
+      <div className="surface w-full max-w-md p-6">
+        <h2 id="broadcast-title" className="text-lg font-semibold text-ink-900">
+          Send to {audience.count} {audience.count === 1 ? "person" : "people"}?
+        </h2>
+        <p className="mt-2 text-sm text-ink-600">
+          &ldquo;<span className="font-medium text-ink-800">{subject}</span>&rdquo;
+          goes to <span className="font-medium text-ink-800">{audience.label}</span>
+          . Everyone receives their own copy - nobody sees anyone else&apos;s
+          address. This cannot be undone.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="subtle" onClick={onCancel} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} loading={isPending}>
+            Send to {audience.count}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ComposeForm({ onSent }) {
-  const [to, setTo] = useState("");
+  const [recipient, setRecipient] = useState(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [sentTo, setSentTo] = useState("");
+  const [notice, setNotice] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+
   const send = useMutation((payload) => adminApi.sendMessage(payload));
+  const audiences = useApi(
+    ({ signal }) => adminApi.messageAudiences({ signal }),
+    [],
+    { initialData: [] },
+  );
+
+  const selectedAudience =
+    recipient?.type === "audience"
+      ? audiences.data?.find((row) => row.value === recipient.value)
+      : null;
+
+  const deliver = async () => {
+    const payload =
+      recipient.type === "audience"
+        ? { audience: recipient.value, subject, body }
+        : { to_email: recipient.value, subject, body };
+
+    const result = await send.mutate(payload);
+    setConfirming(false);
+    if (!result.ok) return;
+
+    setNotice(
+      selectedAudience
+        ? `Sending to ${selectedAudience.label} - ${result.data.recipient_count} ${
+            result.data.recipient_count === 1 ? "person" : "people"
+          }. Each gets their own copy.`
+        : `Message sent to ${recipient.value} from the myScholy address.`,
+    );
+    setRecipient(null);
+    setSubject("");
+    setBody("");
+    // Counts move as accounts are created; refresh them for the next send.
+    audiences.refetch();
+    onSent();
+  };
 
   const submit = async (event) => {
     event.preventDefault();
-    const result = await send.mutate({ to_email: to, subject, body });
-    if (result.ok) {
-      setSentTo(to);
-      setTo("");
-      setSubject("");
-      setBody("");
-      onSent();
-    }
+    setNotice(null);
+    if (!recipient) return;
+    // Group sends are confirmed first; a single address is not worth a dialog.
+    if (selectedAudience) setConfirming(true);
+    else await deliver();
   };
 
   return (
     <Card className="mb-6">
       <CardBody>
         <h2 className="mb-3 text-base font-semibold text-ink-900">New message</h2>
+
         {send.error && (
           <Alert tone="error" className="mb-3">
             {send.error.message}
           </Alert>
         )}
-        {sentTo && !send.error && (
-          <Alert tone="success" className="mb-3">
-            Message sent to {sentTo} from the myScholy address.
+        {notice && !send.error && (
+          <Alert tone="success" className="mb-3" onDismiss={() => setNotice(null)}>
+            {notice}
           </Alert>
         )}
-        <form onSubmit={submit} className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <TextField
-              label="To"
-              type="email"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              placeholder="student@example.com"
-              error={send.error?.fieldErrors?.to_email}
-              required
-            />
-            <TextField
-              label="Subject"
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-              error={send.error?.fieldErrors?.subject}
-              required
-            />
-          </div>
+
+        <form onSubmit={submit} className="space-y-4">
+          <RecipientField
+            audiences={audiences.data ?? []}
+            value={recipient}
+            onChange={setRecipient}
+            error={send.error?.fieldErrors?.to_email}
+            disabled={send.isPending}
+          />
+
+          <TextField
+            label="Subject"
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            error={send.error?.fieldErrors?.subject}
+            required
+          />
+
           <TextAreaField
             label="Message"
             value={body}
@@ -176,13 +243,37 @@ function ComposeForm({ onSent }) {
             error={send.error?.fieldErrors?.body}
             required
           />
-          <div className="flex justify-end">
-            <Button type="submit" disabled={send.isPending}>
-              {send.isPending ? "Sending..." : "Send from myScholy"}
+
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {selectedAudience && (
+              <p className="mr-auto text-sm text-ink-500">
+                Goes to{" "}
+                <span className="font-medium text-ink-800">
+                  {selectedAudience.count}
+                </span>{" "}
+                {selectedAudience.count === 1 ? "person" : "people"}
+              </p>
+            )}
+            <Button type="submit" disabled={send.isPending || !recipient}>
+              {send.isPending
+                ? "Sending..."
+                : selectedAudience
+                  ? `Send to ${selectedAudience.label}`
+                  : "Send from myScholy"}
             </Button>
           </div>
         </form>
       </CardBody>
+
+      {confirming && selectedAudience && (
+        <ConfirmBroadcast
+          audience={selectedAudience}
+          subject={subject}
+          isPending={send.isPending}
+          onCancel={() => setConfirming(false)}
+          onConfirm={deliver}
+        />
+      )}
     </Card>
   );
 }
@@ -216,9 +307,19 @@ function SentList() {
               <p className="font-semibold text-ink-900">{row.subject}</p>
               <p className="text-xs text-ink-500">{formatDate(row.created_at)}</p>
             </div>
-            <p className="mt-0.5 text-sm text-ink-500">
-              To {row.to_email}
-              {row.sent_by ? ` · sent by ${row.sent_by}` : ""}
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-ink-500">
+              {row.audience_label ? (
+                <>
+                  <Badge tone="brand">{row.audience_label}</Badge>
+                  <span>
+                    {row.recipient_count}{" "}
+                    {row.recipient_count === 1 ? "recipient" : "recipients"}
+                  </span>
+                </>
+              ) : (
+                <span>To {row.to_email}</span>
+              )}
+              {row.sent_by && <span>· sent by {row.sent_by}</span>}
             </p>
             <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm text-ink-700">
               {row.body}

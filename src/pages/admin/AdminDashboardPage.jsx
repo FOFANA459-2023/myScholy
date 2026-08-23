@@ -164,6 +164,24 @@ export default function AdminDashboardPage() {
         />
       </div>
 
+      <SectionHeading>Insights</SectionHeading>
+      <div className="mb-8 grid gap-4 md:grid-cols-2">
+        <SectionCard
+          to="/admin/articles"
+          title="Manage articles"
+          description="Mentor and contributing-writer advice - edit, feature or unpublish."
+          tone="brand"
+          icon={icon("M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z")}
+        />
+        <SectionCard
+          to="/admin/articles/new"
+          title="Write an article"
+          description="Publish advice on essays, interviews, applications or life abroad."
+          tone="gold"
+          icon={icon("m16.9 3.6 3.5 3.5L8.5 19H5v-3.5L16.9 3.6ZM14.5 6l3.5 3.5")}
+        />
+      </div>
+
       <SectionHeading>People</SectionHeading>
       <div className="grid gap-4 md:grid-cols-2">
         <SectionCard
