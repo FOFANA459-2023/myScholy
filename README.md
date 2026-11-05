@@ -17,7 +17,7 @@ I built the whole thing myself — frontend, API, infrastructure — and it runs
 **For students**
 - Browse and filter live scholarships by country, degree level, and funding type — every filtered view is a shareable URL
 - Ask the site assistant questions, or take a short quiz that tells you which scholarships fit you (Gemini-powered)
-- Get an email digest of 5 live scholarships every 72 hours
+- Get a weekly email digest of the 5 live scholarships that best match you
 - Every scholarship has its own social preview card, so links shared on WhatsApp or Facebook look right
 
 **For admins**
@@ -34,7 +34,7 @@ graph LR
     API --> DB[(PostgreSQL<br/>Supabase)]
     API --> AI[Gemini API<br/>Groq failover]
     API --> MAIL[Email<br/>React Email · Resend/SMTP]
-    T[systemd timer<br/>every 72h] --> API
+    T[systemd timer<br/>weekly] --> API
     R[Render<br/>warm standby] -.failover.- DB
 ```
 
@@ -48,7 +48,7 @@ graph LR
 - The data layer is a single hand-written fetch wrapper: it attaches and refreshes JWTs (concurrent refreshes collapse into one request), de-duplicates identical in-flight GETs, and serves a stale-while-revalidate cache where each mutation declares the tags it invalidates
 - Every push runs ESLint/Ruff, 200+ unit tests (Vitest + Django), and Playwright end-to-end tests, then deploys automatically if everything is green
 - Server-side URL fetching has an SSRF guard, public endpoints are rate-limited, permissions are role-based with cached lookups, and the browser never holds a database key
-- The digest job records each send in the database, so even if two servers trigger it, students can't get emailed twice — and it runs on a systemd timer because cron can't express "every 72 hours"
+- The digest job records each send in the database, so even if two servers trigger it, students can't get emailed twice — and it runs on a systemd calendar timer that catches up a send missed while the server was down
 
 ## Run it locally
 
