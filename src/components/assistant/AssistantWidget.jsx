@@ -161,7 +161,9 @@ export default function AssistantWidget() {
 
           <div
             ref={scrollRef}
-            className="flex h-80 flex-col gap-2 overflow-y-auto bg-ink-50 p-3"
+            // 20rem on a normal screen, shrinking on a short one so the whole
+            // panel (header + messages + input) always fits on a phone.
+            className="flex h-[min(20rem,calc(100dvh-13rem))] flex-col gap-2 overflow-y-auto bg-ink-50 p-3"
           >
             {messages.map((message, index) => (
               <div

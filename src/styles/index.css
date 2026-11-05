@@ -3,6 +3,15 @@
 @tailwind utilities;
 
 @layer base {
+  /* The page never scrolls sideways. `clip` rather than `hidden`: it trims
+     overflow without turning html/body into a scroll container, so the sticky
+     navbar keeps working. This is the backstop - the wrapping rule below is
+     what actually stops long content from overflowing in the first place. */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -11,6 +20,25 @@
   body {
     @apply bg-ink-50 text-ink-800 antialiased;
     text-rendering: optimizeLegibility;
+    /* Long unbroken strings - pasted URLs in a description, hyphenated
+       programme names, email addresses - wrap instead of pushing the layout
+       wider than a phone screen. Only breaks a word that would overflow. */
+    overflow-wrap: break-word;
+  }
+
+  /* iOS Safari zooms the whole page in when a form control with text smaller
+     than 16px is focused, and does not zoom back out. Every field on the site
+     uses text-sm (14px), so on phones and touch screens the controls are
+     bumped to 16px. Done here, once, rather than in each of the ~20 inputs;
+     !important because it has to beat the per-element text-sm utility.
+     Not `maximum-scale=1` in the viewport tag: that would also stop people
+     who need it from pinch-zooming. */
+  @media (max-width: 767px), (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
   }
 
   /* One consistent focus ring across every interactive element, instead of the
