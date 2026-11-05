@@ -174,15 +174,15 @@ export default function InsightDetailPage() {
               Ready to put this to work?
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-ink-600">
-              Browse live, fully funded scholarships on the board - or take the
-              two-minute fit assessment to see which ones suit you.
+              Browse live, fully funded scholarships on the board - or get
+              matched to the ones that suit you in about a minute.
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Button to="/scholarships" size="lg">
                 Browse scholarships
               </Button>
-              <Button to="/assessment" size="lg" variant="outline">
-                Take the fit assessment
+              <Button to="/get-matched" size="lg" variant="outline">
+                Get matched
               </Button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { deadlineStatus, formatRelativeDays, formatShortDate } from "../../lib/format.js";
 import { Badge, Card } from "../../components/ui/index.js";
 import CountryFlag from "../../components/ui/CountryFlag.jsx";
+import MatchScore from "../../components/ui/MatchScore.jsx";
 
 const DEADLINE_TONE = {
   closed: { tone: "neutral", label: "Closed" },
@@ -28,9 +29,12 @@ function Meta({ label, value, prefix }) {
  * Memoized: the list re-renders on every keystroke in the search box, and there
  * is no reason to re-render 24 unchanged cards each time.
  */
-const ScholarshipCard = React.memo(function ScholarshipCard({ scholarship }) {
+const ScholarshipCard = React.memo(function ScholarshipCard({ scholarship, showMatch = false }) {
   const status = deadlineStatus(scholarship.deadline);
   const badge = DEADLINE_TONE[status];
+  // Present only on the "For You" feed, which adds these to the same payload.
+  const blockers = scholarship.match_blockers ?? [];
+  const reasons = scholarship.match_reasons ?? [];
 
   return (
     <Card
@@ -40,7 +44,12 @@ const ScholarshipCard = React.memo(function ScholarshipCard({ scholarship }) {
     >
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-3 flex items-start justify-between gap-3">
-          <Badge tone={badge.tone}>{badge.label}</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={badge.tone}>{badge.label}</Badge>
+            {showMatch && (
+              <MatchScore score={scholarship.match_score} blocked={blockers.length > 0} />
+            )}
+          </div>
           <span className="shrink-0 text-xs text-ink-400">
             {formatShortDate(scholarship.created_at)}
           </span>
@@ -72,6 +81,28 @@ const ScholarshipCard = React.memo(function ScholarshipCard({ scholarship }) {
           <Meta label="Deadline" value={formatShortDate(scholarship.deadline)} />
           <Meta label="Posted by" value={scholarship.author} />
         </dl>
+
+        {showMatch && (reasons.length > 0 || blockers.length > 0) && (
+          <div className="mt-4 space-y-1.5 border-t border-ink-200/70 pt-4">
+            {reasons.slice(0, 3).map((reason) => (
+              <p key={reason} className="flex gap-2 text-xs text-ink-600">
+                <span aria-hidden="true" className="text-emerald-600">
+                  &#10003;
+                </span>
+                <span>{reason}</span>
+              </p>
+            ))}
+            {/* Shown, never used to silently drop the listing: the facets are
+                AI-extracted and can be wrong, and only the student can judge
+                whether a stated rule really applies to them. */}
+            {blockers.map((blocker) => (
+              <p key={blocker} className="flex gap-2 text-xs text-gold-800">
+                <span aria-hidden="true">&#33;</span>
+                <span>{blocker}</span>
+              </p>
+            ))}
+          </div>
+        )}
 
         <div className="mt-auto flex items-center justify-between pt-5">
           <span className="text-sm font-medium text-brand-800">View details &rarr;</span>

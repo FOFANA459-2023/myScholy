@@ -11,7 +11,7 @@ import { Button } from "../../components/ui/index.js";
  */
 const STEPS = [
   {
-    title: "Eligibility / fit assessment",
+    title: "Get matched to scholarships",
     detail: "We look at your profile and target programs to see what you realistically qualify for.",
   },
   {
@@ -198,8 +198,8 @@ export default function RoadmapSection() {
             do for you - it takes about a minute.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button to="/assessment" size="lg" variant="primary">
-              Start with an assessment
+            <Button to="/get-matched" size="lg" variant="primary">
+              Get matched
             </Button>
           </div>
         </div>

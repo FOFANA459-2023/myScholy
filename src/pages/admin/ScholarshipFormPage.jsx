@@ -9,6 +9,7 @@ import {
   Card,
   CardBody,
   PageLoader,
+  SelectField,
   TextAreaField,
   TextField,
 } from "../../components/ui/index.js";
@@ -18,6 +19,7 @@ import {
 } from "../../lib/api/endpoints.js";
 import { useApi, useMutation } from "../../lib/hooks.js";
 import { toDateInputValue, todayInputValue } from "../../lib/format.js";
+import { ENGLISH_TEST_REQUIREMENTS, FUNDING_TYPES } from "../../lib/options.js";
 import * as v from "../../lib/validation.js";
 
 const EMPTY = {
@@ -31,6 +33,15 @@ const EMPTY = {
   link: "",
   author: "",
   is_active: true,
+  // Match facets. Optional throughout: the matcher reads an empty facet as
+  // "the announcement does not say" and does not penalise the listing, while
+  // a guessed value would hide it from students who actually qualify.
+  fields_of_study: "",
+  eligible_citizenships: "",
+  funding_type: "",
+  requires_english_test: "",
+  min_age: "",
+  max_age: "",
 };
 
 const REQUIRED = [
@@ -55,6 +66,12 @@ const LABELS = {
   degree_level: "Degree level/program type",
   link: "Application link",
   author: "Posted by",
+  fields_of_study: "Fields of study",
+  eligible_citizenships: "Eligible citizenships",
+  funding_type: "Funding type",
+  requires_english_test: "English test",
+  min_age: "Minimum age",
+  max_age: "Maximum age",
 };
 
 /**
@@ -191,6 +208,9 @@ export default function ScholarshipFormPage({ mode = "create" }) {
       degree_level: values.degree_level.trim(),
       link: values.link.trim(),
       author: values.author.trim(),
+      // Empty age boxes mean "no limit stated", not zero.
+      min_age: values.min_age === "" ? null : Number(values.min_age),
+      max_age: values.max_age === "" ? null : Number(values.max_age),
       ...(confirmDuplicate ? { confirm_duplicate: true } : {}),
     });
 
@@ -390,6 +410,102 @@ export default function ScholarshipFormPage({ mode = "create" }) {
               error={errors.author}
               required
             />
+
+            {/* Match facets --------------------------------------------------
+                These drive the student "For You" ranking. The extractor
+                pre-fills them from the announcement; anything it could not
+                find stays blank on purpose. Leave a field empty rather than
+                guessing - the matcher treats blank as "unknown" and does not
+                penalise the listing, but a wrong value silently hides it from
+                students who do qualify. */}
+            <fieldset className="space-y-5 rounded-lg border border-ink-200 p-5">
+              <legend className="px-1.5 text-sm font-semibold text-ink-800">
+                Matching details (optional)
+              </legend>
+              <p className="text-xs text-ink-500">
+                Used to rank this scholarship for each student. Fill in only
+                what the announcement actually states &mdash; leave the rest
+                blank.
+              </p>
+
+              <TextField
+                label={LABELS.fields_of_study}
+                name="fields_of_study"
+                value={values.fields_of_study}
+                onChange={handleChange}
+                error={errors.fields_of_study}
+                placeholder="engineering, computer science"
+                hint="Comma-separated. Blank means open to all subjects."
+              />
+
+              <TextField
+                label={LABELS.eligible_citizenships}
+                name="eligible_citizenships"
+                value={values.eligible_citizenships}
+                onChange={handleChange}
+                error={errors.eligible_citizenships}
+                placeholder="worldwide"
+                hint={
+                  'Which nationalities may apply - not where the study happens. ' +
+                  'Use "worldwide" when any nationality is eligible.'
+                }
+              />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <SelectField
+                  label={LABELS.funding_type}
+                  name="funding_type"
+                  value={values.funding_type}
+                  onChange={handleChange}
+                  error={errors.funding_type}
+                >
+                  <option value="">Not stated</option>
+                  {FUNDING_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </SelectField>
+
+                <SelectField
+                  label={LABELS.requires_english_test}
+                  name="requires_english_test"
+                  value={values.requires_english_test}
+                  onChange={handleChange}
+                  error={errors.requires_english_test}
+                  hint="Only set this when the announcement says so."
+                >
+                  <option value="">Not stated</option>
+                  {ENGLISH_TEST_REQUIREMENTS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </SelectField>
+
+                <TextField
+                  type="number"
+                  label={LABELS.min_age}
+                  name="min_age"
+                  value={values.min_age}
+                  onChange={handleChange}
+                  error={errors.min_age}
+                  min={10}
+                  max={99}
+                />
+
+                <TextField
+                  type="number"
+                  label={LABELS.max_age}
+                  name="max_age"
+                  value={values.max_age}
+                  onChange={handleChange}
+                  error={errors.max_age}
+                  min={10}
+                  max={99}
+                />
+              </div>
+            </fieldset>
 
             <label className="flex items-center gap-2.5 rounded-lg border border-ink-300 px-4 py-3 text-sm">
               <input

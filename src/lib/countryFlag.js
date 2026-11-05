@@ -73,3 +73,21 @@ export function countryCodeFor(hostCountry) {
     null
   );
 }
+
+/**
+ * Every country name in English, sorted, for the assessment's citizenship
+ * datalist.
+ *
+ * A datalist rather than a curated list: any nationality can answer, and the
+ * visitor can still type a name we do not list without being blocked. Built
+ * once on first use - the table is ~250 entries and never changes.
+ */
+let cachedNames = null;
+
+export function countryNames() {
+  if (cachedNames) return cachedNames;
+  cachedNames = Object.values(countries.getNames("en", { select: "official" })).sort(
+    (a, b) => a.localeCompare(b),
+  );
+  return cachedNames;
+}

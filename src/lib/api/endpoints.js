@@ -311,6 +311,25 @@ export const admin = {
 // Public
 // ---------------------------------------------------------------------------
 
+/**
+ * The assessment quiz's matching engine.
+ *
+ * Rule-based and AI-free on the server, so it is cheap enough to call after
+ * every single answer - which is what drives the live "still matching"
+ * counter. `limit: 0` asks for the counts alone.
+ *
+ * Never cached: the result is derived from one person's answers, and the
+ * server marks it `private, no-store`.
+ */
+export const assessment = {
+  match: (answers, { limit = 12, ...options } = {}) =>
+    api.post("/assessment/matches/", { answers, limit }, { auth: true, ...options }),
+
+  /** Counts only, for the narrowing counter while they are still answering. */
+  count: (answers, options) =>
+    api.post("/assessment/matches/", { answers, limit: 0 }, { auth: true, ...options }),
+};
+
 export const contact = {
   send: (payload) => api.post("/contact/", payload, { auth: false }),
 };
@@ -339,7 +358,13 @@ export const assistant = {
       { timeout: 35_000 },
     ),
 
-  /** Public: personalized fit-assessment result from the quiz answers. */
+  /**
+   * Public: the written commentary over an already-computed match result.
+   *
+   * The matcher decides which scholarships fit (see `assessment.match`); this
+   * only narrates that, so it is optional - the result page is complete
+   * without it and simply shows no narrative when no AI key is configured.
+   */
   assessment: (answers) =>
     api.post(
       "/assistant/assessment/",

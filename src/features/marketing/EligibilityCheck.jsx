@@ -1,172 +1,120 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 
-import { Button, LoadingDots } from "../../components/ui/index.js";
-import { assistant as assistantApi } from "../../lib/api/endpoints.js";
+import { Button, LoadingDots, MatchScore } from "../../components/ui/index.js";
+import CountryFlag from "../../components/ui/CountryFlag.jsx";
+import {
+  assessment as assessmentApi,
+  assistant as assistantApi,
+} from "../../lib/api/endpoints.js";
+import { formatShortDate } from "../../lib/format.js";
+import { countryNames } from "../../lib/countryFlag.js";
+import {
+  ANY_FIELD,
+  ANYWHERE,
+  ENGLISH_TEST_OPTIONS,
+  FIELDS_OF_STUDY,
+  FUNDING_NEEDS,
+  INTENDED_LEVELS,
+  TARGET_REGIONS,
+} from "../../lib/options.js";
 
 /**
- * Self-serve fit assessment.
+ * Get matched: six questions that rank the live board for you.
  *
- * Six quick questions. When the backend has an AI key configured, the result
- * is personalized: a Gemini-written plan grounded with live scholarships from
- * the board that match the visitor's level and region. Without a key (or if
- * the call fails) the original rule-based verdict renders instead, so the
- * quiz always produces something.
+ * This is the matcher's only surface, and it is behind the login gate -
+ * the route wraps it in ProtectedRoute. Each question collects exactly one
+ * signal `matching.py` scores on, and the board is re-scored after every
+ * answer - which is what feeds the counter above the question. The counter is
+ * the point of the whole design: the visitor watches a real number narrow
+ * from "every live scholarship" to "the ones that fit you", so the reward for
+ * answering is the answer itself rather than a progress bar.
  *
- * Only the quiz option values are sent - no name, email or anything personal.
+ * Two rules hold throughout:
+ *
+ * - The ranking is server-side and rule-based, so results are identical
+ *   whether or not an AI key is configured. The written narrative is added on
+ *   top when it is available and simply omitted when it is not.
+ * - Answers are stored only for a signed-in student, onto their own Student
+ *   row, where they make the recurring digest personal. Nothing is written
+ *   down for anyone else.
+ *
+ * A note on the copy: none of the above is explained to the reader. There is
+ * no profile page to send anyone to, and the machinery is not their problem -
+ * so the text promises an outcome ("we'll email you new ones") rather than
+ * describing storage or ranking. Keep it that way when editing.
  */
 
 const QUESTIONS = [
   {
-    id: "age",
-    question: "How old are you?",
-    help: "Our consulting service is for adult applicants.",
-    options: [
-      // `terminal` answers decide the outcome on their own - there is no point
-      // asking about essays and deadlines once we know we cannot help yet.
-      { value: "under18", label: "Under 18", terminal: true },
-      { value: "18plus", label: "18 or older" },
-    ],
-  },
-  {
     id: "level",
     question: "What are you applying for?",
-    help: "Pick the level you are seeking admission or funding for.",
-    options: [
-      { value: "undergraduate", label: "Undergraduate" },
-      { value: "graduate", label: "Graduate (Masters)" },
-      { value: "postgraduate", label: "Postgraduate (PhD, fellowship)" },
-      { value: "other", label: "Something else", terminal: true },
-    ],
+    help: "The level you want next - not the one you have now.",
+    options: INTENDED_LEVELS,
+  },
+  {
+    id: "citizenship",
+    question: "What passport do you hold?",
+    help: "Most scholarships only accept certain nationalities.",
+    type: "country",
   },
   {
     id: "region",
     question: "Where would you like to study?",
-    help: "We will match you with scholarships in that part of the world.",
+    help: "Pick a region, or keep it open and see everything.",
     options: [
-      { value: "Anywhere", label: "Anywhere - show me everything" },
-      { value: "Africa", label: "Africa" },
-      { value: "Asia", label: "Asia" },
-      { value: "Europe", label: "Europe" },
-      { value: "North America", label: "North America" },
-      { value: "Middle East", label: "Middle East" },
+      { value: ANYWHERE, label: "Anywhere - show me everything" },
+      ...TARGET_REGIONS.map((region) => ({ value: region, label: region })),
     ],
   },
   {
-    id: "stage",
-    question: "Where are you in the process?",
-    help: "There is no wrong answer - it just changes where we start.",
+    id: "field",
+    question: "What do you want to study?",
+    help: "Broad is fine - your general subject area is enough.",
     options: [
-      { value: "exploring", label: "Still exploring my options" },
-      { value: "shortlist", label: "I have a shortlist of schools or scholarships" },
-      { value: "applying", label: "Actively applying, deadlines are close" },
+      { value: ANY_FIELD, label: "Open to anything" },
+      ...FIELDS_OF_STUDY.map((field) => ({ value: field, label: field })),
     ],
   },
   {
-    id: "essay",
-    question: "How far along is your application essay?",
-    help: "We edit and proofread - the first draft always comes from you.",
-    options: [
-      { value: "none", label: "Not started yet" },
-      { value: "draft", label: "I have a rough draft" },
-      { value: "ready", label: "It is written and needs polishing" },
-    ],
+    id: "funding",
+    question: "How much funding do you need?",
+    help: "Be honest here - a partial award you cannot top up is not a win.",
+    options: FUNDING_NEEDS,
   },
   {
-    id: "cv",
-    question: "Do you also want your resume / CV reviewed?",
-    help: "Offered on request alongside the essay work.",
-    options: [
-      { value: "yes", label: "Yes, please" },
-      { value: "no", label: "No, just the essay" },
-    ],
+    id: "english",
+    question: "Do you have an IELTS or TOEFL score?",
+    help: "So we can warn you before you get invested in one that needs it.",
+    options: ENGLISH_TEST_OPTIONS,
   },
 ];
 
-const LEVEL_LABELS = {
-  undergraduate: "undergraduate",
-  graduate: "graduate",
-  postgraduate: "postgraduate",
-};
+const LABELS = Object.fromEntries(QUESTIONS.map((q) => [q.id, q.question]));
 
-/** Rule-based fallback verdict, used when the AI result is unavailable. */
-function assess(answers) {
-  if (answers.age === "under18") {
-    return {
-      eligible: false,
-      title: "Not quite yet",
-      message:
-        "Our admissions consulting is for applicants aged 18 and above. That is the only thing standing between us - come back when you turn 18 and we will pick this up properly.",
-      actions: [],
-    };
-  }
-
-  if (answers.level === "other") {
-    return {
-      eligible: false,
-      title: "We should talk first",
-      message:
-        "We specialise in undergraduate, graduate and postgraduate applications. Tell us what you are working towards and we will let you know honestly whether we are the right fit.",
-      actions: [{ label: "Send us a message", to: "/contact" }],
-    };
-  }
-
-  // Eligible. Build the plan from the answers rather than listing everything.
-  const services = [];
-
-  services.push(
-    answers.stage === "exploring"
-      ? "Eligibility and fit assessment to narrow down programs worth your time"
-      : "Eligibility and fit assessment against your shortlist",
-  );
-  services.push("Onboarding workshop to map your deadlines and requirements");
-
-  if (answers.stage === "applying") {
-    services.push("Priority planning - we work backwards from your closest deadline");
-  }
-
-  services.push("Application portal setup and document submission");
-
-  if (answers.essay === "none") {
-    services.push(
-      "Essay guidance to get your first draft started - you write it, we shape it",
-    );
-  } else {
-    services.push("Essay editing and proofreading, our specialty");
-  }
-
-  if (answers.cv === "yes") {
-    services.push("Resume / CV proofreading and editing");
-  }
-
-  services.push("Final review and application submission before the deadline");
-
-  return {
-    eligible: true,
-    title: "You are a fit for our consulting",
-    message: `Based on your answers, here is what your ${
-      LEVEL_LABELS[answers.level]
-    } application journey with us would cover once consulting opens:`,
-    services,
-    actions: [
-      { label: "Get notified when we open", to: "/whatsapp" },
-      { label: "Browse scholarships", to: "/scholarships", variant: "outline" },
-      { label: "Ask us a question", to: "/contact", variant: "outline" },
-    ],
-  };
+/** Short chip text for an answer, so the refine row stays scannable. */
+function chipLabel(question, value) {
+  if (question.type === "country") return value;
+  const option = question.options.find((o) => o.value === value);
+  return option ? option.label.split(" - ")[0] : value;
 }
 
 export default function EligibilityCheck() {
-  const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [step, setStep] = useState(0);
+  // Set while re-answering one question from the results screen; answering it
+  // returns straight to the results rather than walking the rest again.
+  const [editing, setEditing] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+
+  const [counts, setCounts] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState(null);
-  // Quota response from the server (429): {message, requiresLogin}. Replaces
-  // the result entirely - guests are invited to log in, logged-in visitors
-  // are told when their allowance resets.
-  const [aiLimit, setAiLimit] = useState(null);
+  const [narrative, setNarrative] = useState(null);
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,39 +129,60 @@ export default function EligibilityCheck() {
     };
   }, []);
 
-  const total = QUESTIONS.length;
-  const current = QUESTIONS[step];
-  const result = useMemo(
-    () => (submitted ? assess(answers) : null),
-    [submitted, answers],
+  // The live counter. Runs on the empty answer set too, so the very first
+  // question already sits under "N scholarships on the board".
+  useEffect(() => {
+    if (submitted) return undefined;
+    const controller = new AbortController();
+    assessmentApi
+      .count(answers, { signal: controller.signal })
+      .then((data) => setCounts(data))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [answers, submitted]);
+
+  const runMatch = useCallback(
+    (finalAnswers) => {
+      setLoading(true);
+      setFailed(false);
+      assessmentApi
+        .match(finalAnswers)
+        .then((data) => {
+          setResult(data);
+          setCounts(data);
+        })
+        .catch(() => setFailed(true))
+        .finally(() => setLoading(false));
+
+      // Optional commentary. Never blocks the results, and its absence is not
+      // an error state - the ranking and the reasons stand on their own.
+      if (aiEnabled) {
+        setNarrativeLoading(true);
+        assistantApi
+          .assessment(finalAnswers)
+          .then((data) => setNarrative(data))
+          .catch(() => setNarrative(null))
+          .finally(() => setNarrativeLoading(false));
+      }
+    },
+    [aiEnabled],
   );
 
-  const runAi = (finalAnswers) => {
-    setAiLoading(true);
-    setAiLimit(null);
-    assistantApi
-      .assessment(finalAnswers)
-      .then((data) => setAiResult(data))
-      .catch((error) => {
-        setAiResult(null);
-        if (error?.status === 429 && error.message) {
-          setAiLimit({
-            message: error.message,
-            requiresLogin: Boolean(error.data?.requires_login),
-          });
-        }
-      })
-      .finally(() => setAiLoading(false));
-  };
+  const total = QUESTIONS.length;
+  const current = editing !== null ? QUESTIONS[editing] : QUESTIONS[step];
 
-  const choose = (option) => {
-    const next = { ...answers, [current.id]: option.value };
+  const choose = (value) => {
+    const next = { ...answers, [current.id]: value };
     setAnswers(next);
-    if (option.terminal || step + 1 === total) {
+
+    if (editing !== null) {
+      setEditing(null);
+      runMatch(next);
+      return;
+    }
+    if (step + 1 === total) {
       setSubmitted(true);
-      // Terminal outcomes (too young, different goal) keep the honest static
-      // answer; the personalized plan is for people we can actually help.
-      if (!option.terminal && aiEnabled) runAi(next);
+      runMatch(next);
     } else {
       setStep(step + 1);
     }
@@ -222,12 +191,15 @@ export default function EligibilityCheck() {
   const restart = () => {
     setAnswers({});
     setStep(0);
+    setEditing(null);
     setSubmitted(false);
-    setAiResult(null);
-    setAiLoading(false);
-    setAiLimit(null);
+    setResult(null);
+    setNarrative(null);
+    setCounts(null);
+    setFailed(false);
   };
 
+  const answering = !submitted || editing !== null;
   const progress = submitted ? 100 : Math.round((step / total) * 100);
 
   return (
@@ -235,20 +207,18 @@ export default function EligibilityCheck() {
       <div className="container">
         <div className="mx-auto mb-10 max-w-2xl text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-gold-600">
-            Quick check
+            Scholarship match
           </p>
           <h2 className="text-3xl font-bold text-brand-900 sm:text-4xl">
-            Are we a fit for you?
+            Find the ones that actually fit you
           </h2>
           <p className="mt-4 text-ink-600">
-            Six quick questions, about a minute. You will receive a
-            personalized plan with scholarships from our board that match you.
-            Your answers are not stored - they only shape your result.
+            Six quick questions and we&rsquo;ll show you the scholarships worth
+            your time &mdash; and why each one suits you.
           </p>
         </div>
 
         <div className="surface mx-auto max-w-2xl overflow-hidden">
-          {/* Progress rail */}
           <div className="h-1.5 bg-ink-100">
             <div
               className="h-full rounded-r-full bg-gradient-to-r from-brand-700 to-gold-400 transition-[width] duration-500 ease-out"
@@ -257,253 +227,438 @@ export default function EligibilityCheck() {
           </div>
 
           <div className="p-6 sm:p-8">
-            {!submitted ? (
-              <fieldset>
-                <div className="mb-5 flex items-baseline justify-between gap-4">
-                  <legend className="text-lg font-bold text-ink-900 sm:text-xl">
-                    {current.question}
-                  </legend>
-                  <span className="shrink-0 text-sm font-medium text-ink-400">
-                    {step + 1} / {total}
-                  </span>
-                </div>
-                <p className="-mt-3 mb-5 text-sm text-ink-500">{current.help}</p>
-
-                <div className="space-y-2.5">
-                  {current.options.map((option) => {
-                    const selected = answers[current.id] === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => choose(option)}
-                        aria-pressed={selected}
-                        className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors ${
-                          selected
-                            ? "border-brand-500 bg-brand-50 text-brand-900"
-                            : "border-ink-200 bg-white text-ink-700 hover:border-brand-300 hover:bg-brand-50/50"
-                        }`}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
-                            selected ? "border-brand-600" : "border-ink-300"
-                          }`}
-                        >
-                          {selected && (
-                            <span className="h-2.5 w-2.5 rounded-full bg-brand-600" />
-                          )}
-                        </span>
-                        <span className="font-medium">{option.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {step > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setStep(step - 1)}
-                    className="mt-6 rounded text-sm font-medium text-ink-500 underline-offset-4 hover:text-brand-700 hover:underline"
-                  >
-                    &larr; Back
-                  </button>
-                )}
-              </fieldset>
-            ) : aiLoading ? (
+            {answering ? (
+              <>
+                <NarrowingCounter counts={counts} answers={answers} />
+                <Question
+                  question={current}
+                  value={answers[current.id]}
+                  index={editing !== null ? editing : step}
+                  total={total}
+                  onChoose={choose}
+                  onBack={
+                    editing !== null
+                      ? () => setEditing(null)
+                      : step > 0
+                        ? () => setStep(step - 1)
+                        : null
+                  }
+                  backLabel={editing !== null ? "Back to results" : "Back"}
+                />
+              </>
+            ) : loading ? (
               <div className="py-10 text-center" aria-live="polite">
                 <LoadingDots />
                 <p className="mt-4 text-sm font-medium text-ink-600">
-                  Building your personalized assessment result…
-                </p>
-                <p className="mt-1 text-xs text-ink-400">
-                  Matching your answers with live scholarships on the board.
+                  Finding your scholarships…
                 </p>
               </div>
-            ) : aiResult ? (
-              <div aria-live="polite">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
-                  Personalized assessment result
-                </span>
-
-                <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
-                  {aiResult.headline}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-ink-600">
-                  {aiResult.summary}
+            ) : failed ? (
+              <div aria-live="polite" className="py-8 text-center">
+                <p className="text-sm text-ink-600">
+                  Something went wrong on our side just now.
                 </p>
-
-                {aiResult.next_steps?.length > 0 && (
-                  <ol className="mt-5 space-y-2.5">
-                    {aiResult.next_steps.map((stepText, index) => (
-                      <li key={stepText} className="flex items-start gap-3 text-sm">
-                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold-100 text-xs font-bold text-gold-800">
-                          {index + 1}
-                        </span>
-                        <span className="text-ink-700">{stepText}</span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-
-                {aiResult.scholarships?.length > 0 && (
-                  <div className="mt-7">
-                    <p className="text-sm font-semibold text-ink-900">
-                      Live scholarships that match you
-                    </p>
-                    <ul className="mt-3 space-y-2">
-                      {aiResult.scholarships.map((row) => (
-                        <li key={row.id}>
-                          <Link
-                            to={`/scholarships/${row.slug || row.id}`}
-                            className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm transition-colors hover:border-brand-300 hover:bg-brand-50/50"
-                          >
-                            <span className="font-medium text-brand-800">
-                              {row.name}
-                            </span>
-                            <span className="text-xs text-ink-500">
-                              {row.host_country} · {row.degree_level} · closes{" "}
-                              {row.deadline}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <Button to="/scholarships">Browse all scholarships</Button>
-                  <Button to="/whatsapp" variant="outline">
-                    Get notified when consulting opens
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <Button onClick={() => runMatch(answers)}>Try again</Button>
+                  <Button to="/scholarships" variant="outline">
+                    Browse the board instead
                   </Button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={restart}
-                  className="mt-6 rounded text-sm font-medium text-ink-500 underline-offset-4 hover:text-brand-700 hover:underline"
-                >
-                  Start over
-                </button>
-              </div>
-            ) : aiLimit ? (
-              <div aria-live="polite">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold-900">
-                  Assessment result
-                </span>
-
-                <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
-                  {aiLimit.requiresLogin
-                    ? "Please log in to view your result"
-                    : "You have reached your daily limit"}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-ink-600">
-                  {aiLimit.message}
-                </p>
-
-                <div className="mt-7 flex flex-wrap gap-3">
-                  {aiLimit.requiresLogin ? (
-                    <>
-                      <Button to="/login">Log in</Button>
-                      <Button to="/signup" variant="outline">
-                        Create a free account
-                      </Button>
-                    </>
-                  ) : (
-                    <Button to="/scholarships">Browse scholarships</Button>
-                  )}
                 </div>
               </div>
             ) : (
-              <div aria-live="polite">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                    result.eligible
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-gold-100 text-gold-900"
-                  }`}
-                >
-                  {result.eligible ? "Good fit" : "Not a fit yet"}
-                </span>
-
-                <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
-                  {result.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-ink-600">
-                  {result.message}
-                </p>
-
-                {result.services && (
-                  <ul className="mt-5 space-y-2.5">
-                    {result.services.map((service) => (
-                      <li key={service} className="flex items-start gap-2.5 text-sm">
-                        <svg
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          aria-hidden="true"
-                          className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="text-ink-700">{service}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {result.actions.length > 0 && (
-                  <div className="mt-7 flex flex-wrap gap-3">
-                    {result.actions.map((action) => (
-                      <Button
-                        key={action.label}
-                        to={action.to}
-                        href={action.href}
-                        variant={action.variant || "primary"}
-                      >
-                        {action.label}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Shown on every outcome: whatever the verdict on consulting,
-                    the board and the community are open to everyone. */}
-                <div className="mt-8 rounded-xl border border-brand-200 bg-brand-50/70 p-5">
-                  <p className="text-sm font-semibold text-brand-900">
-                    Either way, keep going.
-                  </p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
-                    The scholarship board is free to browse - no account, no fees - and
-                    our WhatsApp community shares new opportunities, deadlines and
-                    application tips every week.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Button to="/scholarships" size="sm" variant="primary">
-                      Browse scholarships
-                    </Button>
-                    <Button to="/whatsapp" size="sm" variant="outline">
-                      Join the community
-                    </Button>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={restart}
-                  className="mt-6 rounded text-sm font-medium text-ink-500 underline-offset-4 hover:text-brand-700 hover:underline"
-                >
-                  Start over
-                </button>
-              </div>
+              <Results
+                result={result}
+                answers={answers}
+                narrative={narrative}
+                narrativeLoading={narrativeLoading}
+                onEdit={setEditing}
+                onRestart={restart}
+              />
             )}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The live count of scholarships matching everything answered so far.
+ *
+ * Counts `exact_count` rather than `match_count` on purpose. Only a few
+ * signals actually disqualify a listing (level, citizenship, an age or test
+ * requirement), so "how many are you not blocked from" barely moves as you
+ * answer - whereas "how many satisfy every preference you have stated"
+ * narrows with each one. It is the same server-side matcher either way, so
+ * the number they watch is a real number, not a progress animation.
+ */
+function NarrowingCounter({ counts, answers }) {
+  const answered = Object.keys(answers).length;
+
+  const count = counts?.exact_count;
+  const total = counts?.total_live;
+
+  if (typeof count !== "number" || typeof total !== "number") {
+    return <div className="mb-6 h-14" aria-hidden="true" />;
+  }
+
+  const narrowing = answered > 0;
+
+  return (
+    <div className="mb-6 rounded-xl border border-brand-200 bg-brand-50/60 px-4 py-3">
+      <p aria-live="polite" className="text-sm text-brand-900">
+        <span className="text-2xl font-bold tabular-nums text-brand-800 transition-all duration-300">
+          {count}
+        </span>{" "}
+        <span className="font-medium">
+          {count === 1 ? "scholarship" : "scholarships"}
+          {narrowing
+            ? ` of ${total} still tick${count === 1 ? "s" : ""} every box`
+            : " open right now"}
+        </span>
+      </p>
+      {narrowing && (
+        <div
+          className="mt-2 h-1 w-full overflow-hidden rounded-full bg-brand-200/70"
+          aria-hidden="true"
+        >
+          <div
+            className="h-full rounded-full bg-brand-700 transition-[width] duration-500 ease-out"
+            style={{ width: `${Math.max(2, Math.round((count / total) * 100))}%` }}
+          />
+        </div>
+      )}
+      {narrowing && count === 0 && (
+        <p className="mt-1.5 text-xs text-brand-800">
+          None tick every box &mdash; we&rsquo;ll still show you the closest
+          ones.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Question({ question, value, index, total, onChoose, onBack, backLabel }) {
+  return (
+    <fieldset>
+      <div className="mb-5 flex items-baseline justify-between gap-4">
+        <legend className="text-lg font-bold text-ink-900 sm:text-xl">
+          {question.question}
+        </legend>
+        <span className="shrink-0 text-sm font-medium text-ink-400">
+          {index + 1} / {total}
+        </span>
+      </div>
+      <p className="-mt-3 mb-5 text-sm text-ink-500">{question.help}</p>
+
+      {question.type === "country" ? (
+        <CountryAnswer value={value} onChoose={onChoose} />
+      ) : (
+        <div className="space-y-2.5">
+          {question.options.map((option) => {
+            const selected = value === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onChoose(option.value)}
+                aria-pressed={selected}
+                className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors ${
+                  selected
+                    ? "border-brand-500 bg-brand-50 text-brand-900"
+                    : "border-ink-200 bg-white text-ink-700 hover:border-brand-300 hover:bg-brand-50/50"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
+                    selected ? "border-brand-600" : "border-ink-300"
+                  }`}
+                >
+                  {selected && <span className="h-2.5 w-2.5 rounded-full bg-brand-600" />}
+                </span>
+                <span className="font-medium">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-6 rounded text-sm font-medium text-ink-500 underline-offset-4 hover:text-brand-700 hover:underline"
+        >
+          &larr; {backLabel}
+        </button>
+      )}
+    </fieldset>
+  );
+}
+
+/**
+ * Citizenship, the one answer that cannot be a shortlist of buttons.
+ *
+ * Free text against a datalist of every country name, so any nationality can
+ * answer without us curating a list - and the flag confirms we understood
+ * them before they commit.
+ */
+function CountryAnswer({ value, onChoose }) {
+  const [text, setText] = useState(value || "");
+
+  const submit = (event) => {
+    event.preventDefault();
+    const trimmed = text.trim();
+    if (trimmed) onChoose(trimmed);
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div className="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 focus-within:border-brand-400">
+        <CountryFlag country={text} className="shrink-0" />
+        <input
+          type="text"
+          list="assessment-countries"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder="Start typing your country"
+          aria-label="Country of citizenship"
+          autoComplete="country-name"
+          className="w-full border-0 bg-transparent py-3.5 text-sm text-ink-800 outline-none placeholder:text-ink-400"
+        />
+      </div>
+      <datalist id="assessment-countries">
+        {countryNames().map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+      <Button type="submit" disabled={!text.trim()} fullWidth>
+        Continue
+      </Button>
+    </form>
+  );
+}
+
+/** One labelled group of result cards, headed by its own count. */
+function MatchGroup({ heading, note, rows }) {
+  return (
+    <div className="mt-6">
+      <p className="text-sm font-semibold text-ink-900">{heading}</p>
+      {note && <p className="mt-0.5 text-xs text-ink-500">{note}</p>}
+      <ul className="mt-3 space-y-3">
+        {rows.map((row) => (
+          <li key={row.id}>
+            <Link
+              to={`/scholarships/${row.slug || row.id}`}
+              className="block rounded-xl border border-ink-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="font-semibold text-brand-800">{row.name}</span>
+                <MatchScore score={row.match_score} className="shrink-0" />
+              </div>
+              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-500">
+                <CountryFlag country={row.host_country} />
+                {row.host_country} · {row.degree_level} · closes{" "}
+                {formatShortDate(row.deadline)}
+              </p>
+              {row.match_reasons?.length > 0 && (
+                <ul className="mt-2.5 space-y-1">
+                  {row.match_reasons.slice(0, 3).map((reason) => (
+                    <li key={reason} className="flex gap-2 text-xs text-ink-600">
+                      <span aria-hidden="true" className="text-emerald-600">
+                        &#10003;
+                      </span>
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Results({
+  result,
+  answers,
+  narrative,
+  narrativeLoading,
+  onEdit,
+  onRestart,
+}) {
+  // Whether the answers were remembered. False for a signed-in account with
+  // no student profile, which is the only signed-in case that cannot be.
+  const saved = result?.saved_to_profile ?? false;
+  const results = result?.results ?? [];
+  const blocked = result?.blocked_count ?? 0;
+
+  // Split so every heading sits directly above the listings it counts. When
+  // one number described the perfect matches and the list below mixed those
+  // with the near-misses, the count never matched what you could see on
+  // screen - which reads as a bug even though both numbers were right.
+  const perfect = results.filter((row) => row.is_exact);
+  const close = results.filter((row) => !row.is_exact);
+
+  return (
+    <div aria-live="polite">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+        Your matches
+      </span>
+
+      <h3 className="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
+        {narrative?.headline ||
+          (results.length === 0
+            ? "Nothing fits this yet"
+            : perfect.length > 0
+              ? "Here's what fits you"
+              : "Nothing ticks every box, but these come close")}
+      </h3>
+
+      {narrativeLoading ? (
+        <p className="mt-3 text-sm text-ink-400">Writing your summary…</p>
+      ) : narrative?.summary ? (
+        <p className="mt-3 text-sm leading-relaxed text-ink-600">{narrative.summary}</p>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-ink-600">
+          {results.length === 0
+            ? "Nothing on the board suits this right now. Change an answer below and see what opens up."
+            : "Each one tells you why it fits. Change any answer below to see how your list shifts."}
+        </p>
+      )}
+
+      {/* Refine row: the loop that keeps people here. Changing one answer
+          re-ranks immediately instead of restarting the whole quiz. */}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {QUESTIONS.map((question, index) =>
+          answers[question.id] ? (
+            <button
+              key={question.id}
+              type="button"
+              onClick={() => onEdit(index)}
+              title={`Change: ${LABELS[question.id]}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+            >
+              {chipLabel(question, answers[question.id])}
+              <span aria-hidden="true" className="text-ink-400">
+                &#9998;
+              </span>
+            </button>
+          ) : null,
+        )}
+      </div>
+
+      {perfect.length > 0 && (
+        <MatchGroup
+          heading={
+            perfect.length === 1
+              ? "1 scholarship ticks every box"
+              : `${perfect.length} scholarships tick every box`
+          }
+          rows={perfect}
+        />
+      )}
+
+      {close.length > 0 && (
+        <MatchGroup
+          heading={
+            close.length === 1
+              ? "1 more worth a look"
+              : `${close.length} more worth a look`
+          }
+          note="These miss something you asked for, but are still open to you."
+          rows={close}
+        />
+      )}
+
+      {narrative?.next_steps?.length > 0 && (
+        <div className="mt-7">
+          <p className="text-sm font-semibold text-ink-900">What to do next</p>
+          <ol className="mt-3 space-y-2.5">
+            {narrative.next_steps.map((step, index) => (
+              <li key={step} className="flex items-start gap-3 text-sm">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-gold-100 text-xs font-bold text-gold-800">
+                  {index + 1}
+                </span>
+                <span className="text-ink-700">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {blocked > 0 && (
+        <p className="mt-5 text-xs text-ink-500">
+          We left out {blocked} other{" "}
+          {blocked === 1 ? "scholarship" : "scholarships"} that{" "}
+          {blocked === 1 ? "asks" : "ask"} for something you told us you
+          don&rsquo;t have.{" "}
+          <Link
+            to="/scholarships"
+            className="font-medium text-brand-800 underline underline-offset-4"
+          >
+            See the full board
+          </Link>{" "}
+          if you want to judge them yourself.
+        </p>
+      )}
+
+      {/* The conversion step, and the honest reason for it: an account is
+          what lets these results come back to you without returning here. */}
+      <div className="mt-7 rounded-xl border border-brand-200 bg-brand-50/70 p-5">
+        {saved ? (
+          <>
+            <p className="text-sm font-semibold text-brand-900">
+              We&rsquo;ll keep watching for you.
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+              New scholarships that suit you will come straight to your inbox,
+              so you don&rsquo;t have to keep checking. Come back and change
+              your answers any time your plans do.
+            </p>
+            <div className="mt-4">
+              <Button to="/whatsapp" size="sm" variant="outline">
+                Join the WhatsApp community
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Reached by a signed-in account with no student profile - an
+                admin trying the quiz. The results are real; there is simply
+                nowhere to remember them, so we do not promise the emails. */}
+            <p className="text-sm font-semibold text-brand-900">
+              This one is just for a look.
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+              We can&rsquo;t send matches to this account, so these answers
+              won&rsquo;t be remembered. Students who take it get new matches
+              emailed to them as they come up.
+            </p>
+          </>
+        )}
+      </div>
+
+      <p className="mt-5 text-xs text-ink-500">
+        We read the requirements from each announcement, so we can get one
+        wrong. Always double-check on the official page before you apply.
+      </p>
+
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <Button to="/scholarships" variant="outline" size="sm">
+          Browse all scholarships
+        </Button>
+        <button
+          type="button"
+          onClick={onRestart}
+          className="rounded text-sm font-medium text-ink-500 underline-offset-4 hover:text-brand-700 hover:underline"
+        >
+          Start over
+        </button>
+      </div>
+    </div>
   );
 }

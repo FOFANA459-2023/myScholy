@@ -5,7 +5,7 @@ import { FaEnvelope, FaFacebook, FaLinkedin, FaTiktok } from "react-icons/fa";
 const QUICK_LINKS = [
   { to: "/scholarships", label: "Scholarships" },
   { to: "/insights", label: "Insights & advice" },
-  { to: "/assessment", label: "Fit assessment" },
+  { to: "/get-matched", label: "Get matched" },
   { to: "/whatsapp", label: "WhatsApp community" },
   { to: "/contact", label: "Contact us" },
 ];

@@ -8,7 +8,7 @@ import RoadmapSection from "../features/marketing/RoadmapSection.jsx";
 /** What a student actually receives, as service cards rather than a list. */
 const SERVICES = [
   {
-    title: "Eligibility & fit assessment",
+    title: "Eligibility & fit check",
     body: "We look at your profile against the programs you are targeting and tell you honestly what you qualify for, before you spend weeks on an application that was never going to land.",
   },
   {
@@ -177,12 +177,12 @@ export default function ConsultingPage() {
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-600">
               Students aged 18 and above applying for undergraduate, graduate or
               postgraduate opportunities. Not sure whether that is you? The short
-              assessment answers it in about a minute, and it works today even though
+              matching answers it in about a minute, and it works today even though
               bookings have not opened. The scholarship board stays free either way -
               no account, no fees, no catch.
             </p>
             <div className="mt-5">
-              <Button to="/assessment">Check if we are a fit</Button>
+              <Button to="/get-matched">Get matched</Button>
             </div>
           </div>
         </section>

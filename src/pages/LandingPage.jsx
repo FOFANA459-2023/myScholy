@@ -48,8 +48,8 @@ export default function LandingPage() {
             <Button to="/scholarships" size="lg" variant="gold">
               Explore scholarships
             </Button>
-            <Button to="/assessment" size="lg" variant="onBrand">
-              Take the assessment
+            <Button to="/get-matched" size="lg" variant="onBrand">
+              Get matched
             </Button>
             <Button href={WHATSAPP_COMMUNITY_LINK} size="lg" variant="onBrand">
               Join our community
@@ -138,15 +138,15 @@ export default function LandingPage() {
             The next deadline is already coming.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/70">
-            Browsing is free and needs no account. Start with the board, or let
-            the two-minute assessment narrow it down for you.
+            Browsing is free and needs no account. Start with the board, or
+            sign in and let us narrow it down to the ones that suit you.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button to="/scholarships" size="lg" variant="gold">
               Browse scholarships
             </Button>
-            <Button to="/assessment" size="lg" variant="onBrand">
-              Take the fit assessment
+            <Button to="/get-matched" size="lg" variant="onBrand">
+              Get matched
             </Button>
           </div>
         </div>

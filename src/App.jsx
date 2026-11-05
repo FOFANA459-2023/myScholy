@@ -16,7 +16,7 @@ const ScholarshipDetailPage = lazy(() => import("./pages/ScholarshipDetailPage.j
 const InsightsPage = lazy(() => import("./pages/InsightsPage.jsx"));
 const InsightDetailPage = lazy(() => import("./pages/InsightDetailPage.jsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
-const AssessmentPage = lazy(() => import("./pages/AssessmentPage.jsx"));
+const GetMatchedPage = lazy(() => import("./pages/GetMatchedPage.jsx"));
 const ConsultingPage = lazy(() => import("./pages/ConsultingPage.jsx"));
 const AcademyPage = lazy(() => import("./pages/AcademyPage.jsx"));
 const WhatsAppInvitePage = lazy(() => import("./pages/WhatsAppInvitePage.jsx"));
@@ -53,9 +53,8 @@ export default function App() {
           {/* Insights: mentor and contributing-writer articles. */}
           <Route path="insights" element={<InsightsPage />} />
           <Route path="insights/:slug" element={<InsightDetailPage />} />
-          {/* The programs page was retired; the assessment covers its job. */}
-          <Route path="programs" element={<Navigate to="/assessment" replace />} />
-          <Route path="assessment" element={<AssessmentPage />} />
+          {/* The programs page was retired; matching covers its job. */}
+          <Route path="programs" element={<Navigate to="/get-matched" replace />} />
           <Route path="consulting" element={<ConsultingPage />} />
           <Route path="academy" element={<AcademyPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -63,6 +62,14 @@ export default function App() {
           <Route path="faq" element={<Navigate to="/#faq" replace />} />
           <Route path="whatsapp" element={<WhatsAppInvitePage />} />
           <Route path="access-denied" element={<AccessDeniedPage />} />
+
+          {/* Matching is for signed-in students: it saves their answers and
+              emails them new matches, neither of which is possible for a
+              visitor we cannot identify. ProtectedRoute sends guests to log
+              in and returns them here afterwards. */}
+          <Route element={<ProtectedRoute require="authenticated" />}>
+            <Route path="get-matched" element={<GetMatchedPage />} />
+          </Route>
 
           {/* Guests only */}
           <Route element={<GuestOnlyRoute />}>
@@ -114,6 +121,8 @@ export default function App() {
           <Route path="super-admin-panel" element={<Navigate to="/admin/users" replace />} />
           <Route path="admin-login" element={<Navigate to="/login" replace />} />
           <Route path="whatsapp-invite" element={<Navigate to="/whatsapp" replace />} />
+          {/* The fit assessment became the matching quiz. */}
+          <Route path="assessment" element={<Navigate to="/get-matched" replace />} />
 
           <Route path="*" element={<NotFoundPage />} />
         </Route>
